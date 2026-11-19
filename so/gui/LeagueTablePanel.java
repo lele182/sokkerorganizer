@@ -76,17 +76,18 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
         table.getTableHeader().setResizingAllowed(false);
         setColumnWidths();
         //table.setPreferredScrollableViewportSize(new Dimension(500, 132));
-        so.util.Utils.setJTableVisibleRowCount(table, 8);
+        so.util.Utils.setJTableVisibleRowCount(table, 12);
         table.addMouseListener(this);
 
-        JScrollPane tableScroll = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_NEVER,
+        JScrollPane tableScroll = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                                                  JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         tableScroll.setMinimumSize(new Dimension(500, 150));
-        tableScroll.setPreferredSize(new Dimension(500, 150));
+        tableScroll.setPreferredSize(new Dimension(500, 230));
         graphPanel = new LeagueGraphPanel();
         graphPanel.setToolTips(lm.getLabel(TXT_TT_ROUND), lm.getLabel(TXT_TT_PLACE));
         graphPanel.setColors(new Color[] { Color.RED, Color.GREEN.darker(), new Color(120,120,255), Color.ORANGE,
-                                               Color.MAGENTA, Color.PINK, Color.ORANGE.darker(), Color.GRAY } );
+                                               Color.MAGENTA, Color.PINK, Color.ORANGE.darker(), Color.GRAY,
+                                               Color.CYAN.darker(), Color.YELLOW.darker(), Color.BLUE.darker(), Color.RED.darker() } );
         graphPanel.setRoundChangeListener(this);
         refreshGraph();
 
@@ -234,7 +235,7 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
             idToProjectedData = new HashMap<Integer,ProjectedData>();
         }
 
-        public int getRowCount() { return 8; }
+        public int getRowCount() { return league==null ? 0 : league.getTeamCount(); }
 
         public int getColumnCount() { return 10; }
 
@@ -400,17 +401,29 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
     // ===============================================================================
     private class FixturePanel extends JPanel {
         java.util.ArrayList<RoundPanel> panels;
+        private int fixtureRoundCount;
+        private int fixtureMatchesPerRound;
 
         public FixturePanel() {
-            super( new GridLayout(7,2,8,8) );
+            super( new GridLayout(0,2,8,8) );
             panels = new java.util.ArrayList<RoundPanel>();
+            fixtureRoundCount = -1;
+            fixtureMatchesPerRound = -1;
+            rebuildFixture();
+        }
+
+        private void rebuildFixture() {
+            removeAll();
+            panels.clear();
+            fixtureRoundCount = (league==null) ? 14 : league.getRoundsInSeason();
+            fixtureMatchesPerRound = (league==null) ? 4 : league.getMatchesPerRound();
             JPanel p1, p2;
             RoundPanel r1, r2;
-            for (int i=1; i<=7; i++) {
+            for (int i=1; i<=fixtureRoundCount/2; i++) {
                 p1 = new JPanel();
                 p2 = new JPanel();
                 r1 = new RoundPanel(i);
-                r2 = new RoundPanel(15-i);
+                r2 = new RoundPanel(fixtureRoundCount + 1 - i);
                 p1.add(r1);
                 p2.add(r2);
                 add(p1);
@@ -418,9 +431,13 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
                 panels.add(r1);
                 panels.add(r2);
             }
+            revalidate();
         }
 
         public void refreshFixture() {
+            int rounds = (league==null) ? 14 : league.getRoundsInSeason();
+            int matchesPerRound = (league==null) ? 4 : league.getMatchesPerRound();
+            if (rounds!=fixtureRoundCount || matchesPerRound!=fixtureMatchesPerRound) rebuildFixture();
             for (RoundPanel rp : panels) rp.updateValues(true);
             repaint();
         }
@@ -435,12 +452,12 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
             public RoundPanel(int r) {
                 super(new GridBagLayout());
                 round = r;
-                localTeam   = new JLabel[4];
-                visitorTeam = new JLabel[4];
-                localScore   = new JFormattedTextField[4];
-                visitorScore = new JFormattedTextField[4];
+                localTeam   = new JLabel[fixtureMatchesPerRound];
+                visitorTeam = new JLabel[fixtureMatchesPerRound];
+                localScore   = new JFormattedTextField[fixtureMatchesPerRound];
+                visitorScore = new JFormattedTextField[fixtureMatchesPerRound];
                 Dimension dim = new Dimension(140,20);
-                for (int i=0; i<4; i++) {
+                for (int i=0; i<fixtureMatchesPerRound; i++) {
                     localTeam[i]   = new JLabel();
                     visitorTeam[i] = new JLabel();
                     localTeam[i].setPreferredSize(dim);
@@ -461,7 +478,7 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
                 gbc2.weightx = 0.0;
                 GridBagConstraints gbc3 = (GridBagConstraints)gbc.clone();
                 gbc3.gridwidth = GridBagConstraints.REMAINDER;
-                for (int i=0; i<4; i++) {
+                for (int i=0; i<fixtureMatchesPerRound; i++) {
                     add(localTeam[i], gbc);
                     add(localScore[i], gbc2);
                     add(new JLabel(" : "), gbc2);
@@ -474,7 +491,7 @@ public class LeagueTablePanel extends JPanel implements MouseListener, LeagueGra
 
             private void updateValues(boolean clear) {
                 if (league == null) return;
-                for (int i=0; i<4; i++) {
+                for (int i=0; i<fixtureMatchesPerRound; i++) {
                     LeagueDetails.MatchData match = league.getMatch(round, i+1);
                     removeScoreChangeListeners( localTeam[i] );
                     removeScoreChangeListeners( visitorTeam[i] );

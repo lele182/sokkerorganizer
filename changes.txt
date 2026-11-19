@@ -1,3 +1,6 @@
+Current update:
+      - League tracking now supports 12-team divisions with 22 rounds and 6 matches per round, while retaining support for historical 8-team divisions.
+
 0.95  - height, superdivine
 
 0.94  - bugfixes.

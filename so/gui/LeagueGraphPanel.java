@@ -28,6 +28,7 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
     private boolean userChange;
     private int currentRound;
     private int graphScale;
+    private int seasonRounds;
     private String ttAxisX;
     private String ttAxisY;
     private RoundChangeListener roundChangeListener;
@@ -39,6 +40,7 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
         userChange = true;
         currentRound = 0;
         graphScale = 8;
+        seasonRounds = ROUNDS_IN_SEASON;
         selectedTeam = -1;
         ttAxisX = null;
         ttAxisY = null;
@@ -122,12 +124,18 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
 
     public void setData(GraphicableData wd) {
         graphData = wd;
+        if (wd != null && wd.size()>0) {
+            seasonRounds = wd.size() - 1;
+            graphScale = wd.getFieldScale(0);
+        }
+        if (currentRound>seasonRounds) currentRound = seasonRounds;
+        graphCanvas.drawGrid();
         graphCanvas.drawGraph();
         graphCanvas.repaint();
     }
 
     public void setCurrentRound(int round) {
-        if (round<0 || round>ROUNDS_IN_SEASON) return;
+        if (round<0) return;
         currentRound = round;
         //graphCanvas.repaint();
     }
@@ -149,7 +157,7 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
     public void mouseClicked(MouseEvent me) {
         if (graphData==null || roundChangeListener==null) return;
         double pad = graphCanvas.Y*0.1;
-        double hgap = (graphCanvas.X - 2*pad)/(ROUNDS_IN_SEASON+2.0);
+        double hgap = (graphCanvas.X - 2*pad)/(seasonRounds+2.0);
         if (!isEventInRectangle(me, pad+hgap/2, pad, graphCanvas.X-pad-hgap/2, graphCanvas.Y-pad)) return;
         int x = me.getX();
         int week = (int)Math.round((x - pad)/hgap - 1);
@@ -206,12 +214,12 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
             Graphics2D g2d = grid.createGraphics();
             double pad = Y*0.1;
             double vgap = (Y-pad*2.1)/graphScale;
-            double hgap = (X - 2*pad)/(ROUNDS_IN_SEASON+2.0);
+            double hgap = (X - 2*pad)/(seasonRounds+2.0);
             g2d.setColor(Color.LIGHT_GRAY);
             /* horizontal grid lines */
             for (int i=1; i<=graphScale; i++) drawLine(g2d, pad, Y-pad-vgap*i, X-pad, Y-pad-vgap*i);
             /* vertical grid lines */
-            for (int i=1; i<=ROUNDS_IN_SEASON+1; i++) drawLine(g2d, pad+hgap*i, Y-pad, pad+hgap*i, Y-pad-vgap*graphScale);
+            for (int i=1; i<=seasonRounds+1; i++) drawLine(g2d, pad+hgap*i, Y-pad, pad+hgap*i, Y-pad-vgap*graphScale);
             /* frame */
             g2d.setColor(Color.BLACK);
             drawLine(g2d, pad, vgap, pad, Y-pad);
@@ -220,11 +228,11 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
             /* vertical scale numbers */
             g2d.setColor(Color.DARK_GRAY);
             for (int i=1; i<=graphScale; i++) {
-                g2d.drawString(Integer.toString(9-i), (int)(pad*0.3), (int)(Y-pad*0.8-vgap*i));
-                g2d.drawString(Integer.toString(9-i), (int)(X-pad*0.8), (int)(Y-pad*0.8-vgap*i));
+                g2d.drawString(Integer.toString(graphScale+1-i), (int)(pad*0.3), (int)(Y-pad*0.8-vgap*i));
+                g2d.drawString(Integer.toString(graphScale+1-i), (int)(X-pad*0.8), (int)(Y-pad*0.8-vgap*i));
             }
             /* horizontal week numbers */
-            for (int i=1; i<=ROUNDS_IN_SEASON+1; i++) {
+            for (int i=1; i<=seasonRounds+1; i++) {
                 if (i < 11) g2d.drawString(Integer.toString(i-1), (int)(pad*0.9+hgap*i), (int)(Y-pad*0.3) );
                 else g2d.drawString(Integer.toString(i-1), (int)(pad*0.8+hgap*i), (int)(Y-pad*0.3) );
             }
@@ -234,25 +242,26 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
             if ((checkBoxes[idx]==null) || (!checkBoxes[idx].isSelected())) return;
             double pad = Y*0.1;
             double vgap = (Y-pad*2.1)/graphScale;
-            double hgap = (X - 2*pad)/(ROUNDS_IN_SEASON+2.0);
+            double hgap = (X - 2*pad)/(seasonRounds+2.0);
 
             g2d.setColor(c);
             if (idx==selectedTeam) g2d.setStroke( new java.awt.BasicStroke(4) );
             else g2d.setStroke( new java.awt.BasicStroke(2) );
             int x0, x1, y0, y1;
             int dot = 3; //graphData.getFieldsCount() - idx + 2;
-            for (int i=0; i<ROUNDS_IN_SEASON; i++) {
+            for (int i=0; i<seasonRounds; i++) {
                 int a = graphData.getData(i, idx);
+                if (a == NO_DATA) break;
                 int b = graphData.getData(i+1, idx);
                 x0 = (int)(pad+hgap*(i+1));
-                y0 = (int)(Y-pad-vgap*(9-a));
+                y0 = (int)(Y-pad-vgap*(graphScale+1-a));
                 g2d.fillOval(x0-dot,y0-dot,dot*2,dot*2);
                 if (b == NO_DATA) break;
                 x1 = (int)(pad+hgap*(i+2));
-                y1 = (int)(Y-pad-vgap*(9-b));
+                y1 = (int)(Y-pad-vgap*(graphScale+1-b));
                 g2d.drawLine(x0,y0, x1,y1);
                 // dots for last round
-                if (i==ROUNDS_IN_SEASON-1) g2d.fillOval(x1-dot,y1-dot,dot*2,dot*2);
+                if (i==seasonRounds-1) g2d.fillOval(x1-dot,y1-dot,dot*2,dot*2);
             }
         }
 
@@ -260,7 +269,7 @@ public class LeagueGraphPanel extends JPanel implements ItemListener, MouseListe
             g.setColor(new Color(255, 255, 192, 96));
             double pad = Y*0.1;
             double vgap = (Y-pad*2.1)/graphScale;
-            double hgap = (X - 2*pad)/(ROUNDS_IN_SEASON+2.0);
+            double hgap = (X - 2*pad)/(seasonRounds+2.0);
             int w = 10;
             int h = (int)(vgap*graphScale) + 1;
             int x = (int)(pad+hgap*(currentRound+1)) - w;

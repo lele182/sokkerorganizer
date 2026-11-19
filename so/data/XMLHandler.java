@@ -751,7 +751,6 @@ public class XMLHandler {
         }
         SokkerCalendar skcal = new SokkerCalendar(date);
         boolean todayIsEndOfWeek = (skcal.get(Calendar.DAY_OF_WEEK)==Calendar.SUNDAY || skcal.get(Calendar.DAY_OF_WEEK)==Calendar.MONDAY);
-        int _week = skcal.getWeekOfSeason();
         int season = skcal.getSeason();
         int ret = 0;
         for (int leagueId : foundLeagues) {
@@ -800,10 +799,11 @@ public class XMLHandler {
             /* don't bother if we already have this data */
             //if (round<=ld.getRound()) continue;
             if (round<ld.getRound() || (round==ld.getRound() && !todayIsEndOfWeek && round>0) ||
-                (round==0 && !updateFullLeague) || _week==16) continue;
+                (round==0 && !updateFullLeague)) continue;
             /* check the teams */
             NodeList _teams = doc.getElementsByTagName("team");
-            if (_teams.getLength()!=8) continue;
+            int teamCount = _teams.getLength();
+            if (teamCount<2 || teamCount%2!=0) continue;
             boolean isMyTeamPresent = false;
             NodeList _tids = doc.getElementsByTagName("teamID");
             for (int i=0, N=_teams.getLength(); i<N; i++) {
@@ -824,7 +824,7 @@ public class XMLHandler {
                     Element telement = (Element)tnode;
                     int tid = Integer.parseInt( getTagValue(telement, "teamID") );
                     String _rt = getTagValue(telement, "rankTotal");
-                    int lastSeasonPos = 9 - Integer.parseInt( _rt.substring( (_rt.length()>3?_rt.length()-3:0) ) );
+                    int lastSeasonPos = teamCount + 1 - Integer.parseInt( _rt.substring( (_rt.length()>3?_rt.length()-3:0) ) );
                     String tname = "";
                     if (tid==teamDetails.getId()) {
                         isMyTeamPresent = true;
@@ -844,20 +844,21 @@ public class XMLHandler {
             /* check if an error ocurred, reused variable isMyTeamPresent */
             if (!isMyTeamPresent) continue;
             /* parse the rounds */
+            int roundsInSeason = ld.getRoundsInSeason();
             pdialog.setBarString(lname + " : " + lm.getLabel(TXT_DL_MATCHES));
             try {
                 if (updateFullLeague) {
                     int _auxr = ld.getRound();
-                    pdialog.extendMaximumBy(14 - _auxr);
+                    pdialog.extendMaximumBy(roundsInSeason - _auxr);
                     for (int r=_auxr+1; r<=round; r++) parseRoundMatchesFromXML(r, ld);
                     if (_auxr==0) { /* get the unplayed rounds */
-                        for (int r=round+1; r<=14; r++) parseRoundMatchesFromXML(r, ld);
+                        for (int r=round+1; r<=roundsInSeason; r++) parseRoundMatchesFromXML(r, ld);
                     }
                 }
                 else {
                     pdialog.extendMaximumBy(round - ld.getRound());
                     for (int r=ld.getRound()+1; r<=round; r++) parseRoundMatchesFromXML(r, ld);
-                    if (todayIsEndOfWeek && round<14) {
+                    if (todayIsEndOfWeek && round<roundsInSeason) {
                         pdialog.extendMaximumBy(1);
                         if (parseRoundMatchesFromXML(round+1, ld)) round++;
                     }
@@ -866,6 +867,7 @@ public class XMLHandler {
                 if (so.So.DEBUG) ioe.printStackTrace();
                 continue;
             } // end TRY
+            ld.normalizeLastSeasonPositions();
             ld.setRound(round);
             leagueEncapsulator.updateLeagueDetails(ld);
             ret = PARSE_LEAGUE;

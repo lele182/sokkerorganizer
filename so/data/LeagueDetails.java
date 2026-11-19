@@ -7,6 +7,7 @@ import java.util.List;
 
 public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDetails> {
     private static final long serialVersionUID = 3752216159832394105L;
+    private static final int MAX_ROUNDS_IN_SEASON = 22;
 
     private int id;
     private short country;
@@ -61,6 +62,9 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
     public int getSeason() { return season; }
     public int getRound() { return round; }
     public String getName() { return name; }
+    public int getTeamCount() { return teams.size(); }
+    public int getMatchesPerRound() { return teams.size() / 2; }
+    public int getRoundsInSeason() { return Math.max(0, (teams.size() - 1) * 2); }
 
     public void addTeam(int tid, String tname, int lastSeasonPos) {
         TeamProfile team;
@@ -80,10 +84,12 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
         TeamProfile tp2 = teams.get( Integer.toString(tid2) );
         //% System.out.println ("· "+round+"/" + mir +": " + team1 +" - "+team2+ "  ["+ goals1 +","+goals2+"]");
         MatchData match = new MatchData(matchid, round, tp1.getId(), tp2.getId(), goals1, goals2, finished, mir);
-        int auxIdx = (round-1)*4 + mir-1;
+        int auxIdx = (round-1)*getMatchesPerRound() + mir-1;
         if (auxIdx >= matches.size()) matches.add(match);
         else matches.set(auxIdx, match);
         if (finished) {
+            if (tp1.lastSeasonPos==0) tp1.lastSeasonPos = (short)((getMatchesPerRound() - mir + 1) * 2);
+            if (tp2.lastSeasonPos==0) tp2.lastSeasonPos = (short)((getMatchesPerRound() - mir + 1) * 2 - 1);
             tp1.addMatchData(match);
             tp2.addMatchData(match);
         }
@@ -105,7 +111,7 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
     }
 
     public MatchData getMatch(int round, int matchInRound) {
-        return matches.get( (round-1)*4 + matchInRound-1 );
+        return matches.get( (round-1)*getMatchesPerRound() + matchInRound-1 );
     }
 
     public TeamProfile getTeam(int tid) {
@@ -146,17 +152,18 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
     /* FIX for sokker.org BUG */
     //& MAKE NESTED CLASSES to INNER CLASSES (remove static)
     private void fixLastSeasonPositions() {
-        int [] _pos = new int[9];
+        int teamCount = teams.size();
+        boolean [] usedPositions = new boolean[teamCount + 1];
         java.util.HashSet<TeamProfile> bugTeams = new java.util.HashSet<TeamProfile>();
         for (TeamProfile tp : teams.values()) {
             int lsp = tp.lastSeasonPos;
-            if (lsp>0 && lsp<9) _pos[lsp] = tp.id;
+            if (lsp>0 && lsp<=teamCount && !usedPositions[lsp]) usedPositions[lsp] = true;
             else bugTeams.add(tp);
         }
         for (TeamProfile tp : bugTeams) {
-            for (int i=1; i<=8; i++) {
-                if (_pos[i]<1) {
-                    _pos[i] = tp.id;
+            for (int i=1; i<=teamCount; i++) {
+                if (!usedPositions[i]) {
+                    usedPositions[i] = true;
                     tp.lastSeasonPos = (short)i;
                     break;
                 }
@@ -164,15 +171,13 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
         }
         resetGraphicableData();
     }
+    public void normalizeLastSeasonPositions() {
+        fixLastSeasonPositions();
+    }
     /* ************ Interface Serializable ************ */
     private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
         in.defaultReadObject();
-        for (TeamProfile tp : teams.values()) {
-            if (tp.lastSeasonPos<1 || tp.lastSeasonPos>8) {
-                fixLastSeasonPositions();
-                break;
-            }
-        }
+        fixLastSeasonPositions();
     }
 
     // =================================================================================
@@ -191,7 +196,7 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
             id = i;
             name = n;
             dataCount = 0;
-            data = new TeamData[14];
+            data = new TeamData[MAX_ROUNDS_IN_SEASON];
             lastSeasonPos = (short)lsp;
         }
 
@@ -201,21 +206,15 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
 //         }
 
         public String getName() { return name; }
-        public int getLastSeasonPos() { 
-            return (lastSeasonPos>0)?((lastSeasonPos<9)?lastSeasonPos:1):8;
-            //& if (lastSeasonPos<1 || lastSeasonPos>8) fixLastSeasonPositions();
-            //& return lastSeasonPos;
-        }
+        public int getLastSeasonPos() { return lastSeasonPos; }
 
         public void addMatchData(MatchData md) {
             if (dataCount>=data.length) return; // porsiaca
             if (dataCount>=md.getRound()) return;
             short gf, ga;
-            boolean local = false;
             if (id == md.tidL) { //local
                 gf = md.goalsL;
                 ga = md.goalsV;
-                local = true;
             }
             else { //visitor
                 gf = md.goalsV;
@@ -223,7 +222,6 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
             }
             if (dataCount==0) {
                 data[dataCount] = new TeamData();
-                if (lastSeasonPos==0) lastSeasonPos = (short)((5 - md.numberInRound) * 2 - (local?0:1));
             }
             else data[dataCount] = new TeamData(data[dataCount-1]);
             data[dataCount].addMatch(gf, ga);
@@ -335,7 +333,7 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
     public static class MatchData implements java.io.Serializable {
         private static final long serialVersionUID = 3547871976964244932L;
 
-        private short round; // 1 to 14
+        private short round; // 1 to 22
         private int id;
         private int tidL;
         private int tidV;
@@ -384,19 +382,21 @@ public class LeagueDetails implements java.io.Serializable, Comparable<LeagueDet
         private int [][] data;
 
         public RoundData() {
-            data = new int[15][8];
+            int roundsInSeason = getRoundsInSeason();
+            int teamCount = getTeamCount();
+            data = new int[roundsInSeason + 1][teamCount];
             for (int r=0; r<=round; r++) {
                 List<TeamProfile> lista = getTeamsList(r);
-                for (int i=0; i<8; i++) data[r][lista.get(i).getLastSeasonPos()-1] = i+1;
+                for (int i=0; i<teamCount; i++) data[r][lista.get(i).getLastSeasonPos()-1] = i+1;
             }
-            for (int r=round+1; r<=14; r++) {
-                for (int i=0; i<8; i++) data[r][i] = so.Constants.NO_DATA;
+            for (int r=round+1; r<=roundsInSeason; r++) {
+                for (int i=0; i<teamCount; i++) data[r][i] = so.Constants.NO_DATA;
             }
         }
 
-        public int size() { return 15; }
-        public int getFieldsCount() { return 8; }
-        public int getFieldScale(int idx) { return 8; }
+        public int size() { return getRoundsInSeason() + 1; }
+        public int getFieldsCount() { return getTeamCount(); }
+        public int getFieldScale(int idx) { return getTeamCount(); }
 
         public java.util.Date getDate(int week) {
             return null;
