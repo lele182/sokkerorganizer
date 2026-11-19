@@ -51,7 +51,7 @@ public final class Constants {
     public static final String FILENAME_IMG_MANAGER_NO_NOTES = DIRNAME_IMAGES + "/notes_blank.gif";
 
     public static final String DEFAULT_LANG  = "<Default>";
-    public static final String URL_HOSTNAME   = "https://online.sokker.org/";
+    public static final String URL_HOSTNAME   = "https://sokker.org/";
     public static final String URL_DATA_PHP   = "dataxml.php";
     public static final String URL_XML_INIT   = "start.php?session=xml";
 //     public static final String URL_INIT   = "index.php";

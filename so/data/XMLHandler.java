@@ -209,13 +209,14 @@ public class XMLHandler {
     /* returns the teamId if successful, else -1 */
     protected int initSession() throws IOException, MalformedURLException {
         URL url;
-        URLConnection urlConn;
+        HttpURLConnection urlConn;
         DataOutputStream printout;
         pdialog.setBarString(lm.getLabel(TXT_CONNECTING));
         /* URL of CGI-Bin script. */
         url = new URL (URL_HOSTNAME + URL_XML_INIT);
         /* URL connection channel. */
-        urlConn = url.openConnection();
+        urlConn = (HttpURLConnection)url.openConnection();
+        urlConn.setRequestMethod("POST");
         /* Let the run-time system (RTS) know that we want input. */
         urlConn.setDoInput (true);
         /* Let the RTS know that we want to do output. */
@@ -269,14 +270,29 @@ public class XMLHandler {
     }
     /* returns the teamId if successful, else -1 */
     private int checkLoginSuccess(String loginResponse) {
-        if (loginResponse.indexOf("OK")==-1) {
-            JOptionPane.showMessageDialog(frame, lm.getLabel(TXT_ERROR_LOGIN_FAILED),
+        String response = (loginResponse==null) ? "" : loginResponse.trim();
+        String status = response.length()==0 ? "" : response.split("\\s+", 2)[0];
+        int lineBreak = response.indexOf('\n');
+        String responseLine = (lineBreak<0) ? response : response.substring(0, lineBreak).trim();
+        if (responseLine.length()>160) responseLine = responseLine.substring(0, 160);
+        if (!"OK".equals(status)) {
+            JOptionPane.showMessageDialog(frame, lm.getLabel(TXT_ERROR_LOGIN_FAILED) +
+                                          (responseLine.length()==0 ? "" : "\n" + responseLine),
                                           lm.getLabel(TXT_ERROR), JOptionPane.ERROR_MESSAGE);
             return -1;
         }
-        String ss = "teamID=";
-        //pdialog.setBarString(loginResponse);
-        return Utils.getIntFromString(loginResponse, loginResponse.indexOf(ss)+ss.length());
+        int teamId = -1;
+        int teamIdOffset = response.indexOf("teamID=");
+        if (teamIdOffset>=0) teamId = Utils.getIntFromString(response, teamIdOffset + "teamID=".length());
+        if (teamId<1) teamId = teamDetails.getId();
+        if (teamId<1) {
+            JOptionPane.showMessageDialog(frame,
+                                          lm.getLabel(TXT_ERROR_LOGIN_FAILED) +
+                                          "\nSokker returned OK, but no teamID was supplied or saved.",
+                                          lm.getLabel(TXT_ERROR), JOptionPane.ERROR_MESSAGE);
+            return -1;
+        }
+        return teamId;
     }
 
     /* ######################################################### */
