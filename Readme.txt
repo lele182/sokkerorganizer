@@ -20,6 +20,10 @@ A. English
 
 Enjoy!
 
+Windows users who downloaded the source from GitHub need JDK 11 or later (not only a JRE).
+From the project folder, run "build-windows.bat". It creates "SokkerOrganizer-windows.zip".
+To start the app, run "run.bat" from the project folder, or extract the ZIP and run its "run.bat".
+
 
 ** IMPORTANT **
 The installation path cannot have special characters such as [ ]

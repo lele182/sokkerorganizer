@@ -58,7 +58,7 @@ public class OldXMLHandler {
                 short cd = Short.parseShort( getTagValue(pelement, "cards") );
                 int in = Math.round( Float.parseFloat( getTagValue(pelement, "injurydays") ) );
                 PlayerProfile player = new PlayerProfile(id, name, surname, country, teamId, 0);
-                player.addPlayerData(date, vl, sy, ag, ms, go, as, fm, st, pc, te, ps, kp, df, pm, sc, cd, in, 0, 0, 0, false, false, 0, 0, 0, 0);
+                player.addPlayerData(date, vl, sy, ag, 0, ms, go, as, fm, st, pc, te, ps, kp, df, pm, sc, cd, in, 0, 0, 0, false, false, false, 0, 0, 0, 0);
                 parsedPlayers.add(player);
             }
         } //end for
@@ -81,7 +81,7 @@ public static int parseJuniors(Document doc, Date date, JuniorSchool school) {
                     short weeks = Short.parseShort( getTagValue(jelement, "weeks") );
                     short skill = Short.parseShort( getTagValue(jelement, "skill") );
                     JuniorProfile junior = new JuniorProfile(id, name, surname);
-                    junior.addJuniorData(date, weeks, skill);
+                    junior.addJuniorData(date, weeks, skill, (short)0);
                     parsedJuniors.add(junior);
                 }
             } catch (Exception e) {
