@@ -22,8 +22,8 @@ if not exist "%CLASSES%" mkdir "%CLASSES%"
 if not exist "%DIST%" mkdir "%DIST%"
 
 (
-    for /r "%ROOT%so" %%F in (*.java) do @echo "%%F"
-    for /r "%ROOT%com" %%F in (*.java) do @echo "%%F"
+    for /r "%ROOT%so" %%F in (*.java) do call :writeSource "%%F"
+    for /r "%ROOT%com" %%F in (*.java) do call :writeSource "%%F"
 ) > "%BUILD%\sources.txt"
 
 javac -encoding windows-1252 --release 8 -d "%CLASSES%" @"%BUILD%\sources.txt"
@@ -62,3 +62,9 @@ echo.
 echo Build failed. See the compiler output above.
 pause
 exit /b 1
+
+:writeSource
+set "SOURCE=%~1"
+set "SOURCE=%SOURCE:\=/%"
+echo "%SOURCE%"
+exit /b
