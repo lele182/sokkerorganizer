@@ -16,9 +16,9 @@ import javax.swing.UIManager;
 public final class So {
     private static final String SO_NAME = "New Sokker Organizer";
     private static final String SO_DATA_DIR_NAME = "Sokker Organizer";
-    private static final String SO_VERSION = "0.95.1";
+    private static final String SO_VERSION = "0.95.2";
     // Numeric format retained for the legacy updater's version.xml.
-    private static final double SO_VERSION_NUMBER = 0.951;
+    private static final double SO_VERSION_NUMBER = 0.952;
     private static final String SO_RELEASE_STATUS = "BETA";
     private static final String SO_SPECIAL_MSG = "";
     private static final String DANNY_BDAY_MSG = "Happy Birthday to Danny :)";

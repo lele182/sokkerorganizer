@@ -1,7 +1,9 @@
 Current update:
-      - Renamed to New Sokker Organizer 0.95.1.
+      - Added a junior-talent editor with editable inputs and talent range estimates.
+      - Versioned as New Sokker Organizer 0.95.2.
       - League tracking now supports 12-team divisions with 22 rounds and 6 matches per round, while retaining support for historical 8-team divisions.
 
+0.95.2 - Added manual junior-talent inputs and range estimates.
 0.95.1 - Renamed to New Sokker Organizer.
 0.95  - height, superdivine
 

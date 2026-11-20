@@ -20,12 +20,16 @@ import javax.swing.JSplitPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 import javax.swing.BorderFactory;
+import javax.swing.JOptionPane;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.DefaultCellEditor;
 import javax.swing.table.*;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
+import java.awt.GridLayout;
 import java.awt.Color;
 import java.awt.Insets;
 import java.awt.FlowLayout;
@@ -625,9 +629,21 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
     /* interface MouseListener */
     public void mouseClicked(MouseEvent e) {
         if (e.getButton()==MouseEvent.BUTTON1 && e.getClickCount()==2) {
-            int row = squadTable.getSelectedRow();
+            int row;
+            int column = -1;
+            if (e.getSource()==squadTable) {
+                row = squadTable.rowAtPoint(e.getPoint());
+                column = squadTable.columnAtPoint(e.getPoint());
+            }
+            else row = rowHeader.rowAtPoint(e.getPoint());
             if (row==-1) return;
             PlayerProfile p = roster.getPlayersList().get( tableSorter.modelIndex(row) );
+            if (e.getSource()==squadTable && column>=0
+                    && squadTable.convertColumnIndexToModel(column)==19
+                    && p.getOwnerTeamId()==p.getSourceTeamId()) {
+                editYouthTalent(p);
+                return;
+            }
             if (playerStatsPanel!=null) {
                 so.gui.MainFrame.setSelectedTab(playerStatsPanel);
                 playerStatsPanel.showPlayer(p);
@@ -664,6 +680,16 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
     }
 
     private String getYouthTalent(PlayerProfile player) {
+        if (player.hasJuniorTalentInputs()) {
+            return formatTalent(calculateTalent(player.getJuniorTalentTrainingWeeks(),
+                    player.getJuniorTalentInitialSkill(), player.getJuniorTalentFinalSkill()));
+        }
+        JuniorProfile formerJunior = findMatchingJunior(player);
+        if (formerJunior == null || formerJunior.getInitialSkill() == JR_NO_DATA) return null;
+        return formatTalent(formerJunior.getTalent(player.getInitialSkillSum() / 3.0));
+    }
+
+    private JuniorProfile findMatchingJunior(PlayerProfile player) {
         if (juniorSchool == null) return null;
         JuniorProfile matchingJunior = null;
         for (JuniorProfile formerJunior : juniorSchool.getFormerJuniorsList()) {
@@ -673,13 +699,103 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 matchingJunior = formerJunior;
             }
         }
-        if (matchingJunior == null || matchingJunior.getInitialSkill() == JR_NO_DATA) return null;
-        double talent = matchingJunior.getTalent(player.getInitialSkillSum() / 3.0);
-        return BigDecimal.valueOf(talent).setScale(2, RoundingMode.HALF_UP).toPlainString();
+        return matchingJunior;
     }
 
     private boolean sameName(String first, String second) {
         return first != null && second != null && first.trim().equalsIgnoreCase(second.trim());
+    }
+
+    private double calculateTalent(int trainingWeeks, double initialSkill, double finalSkill) {
+        double skillGain = finalSkill - initialSkill;
+        if (trainingWeeks <= 0 || skillGain <= 0) return Double.NaN;
+        return trainingWeeks / skillGain;
+    }
+
+    private String formatTalent(double talent) {
+        if (Double.isNaN(talent) || Double.isInfinite(talent) || talent <= 0) {
+            return labelManager.getLabel(TXT_JUNIOR_TALENT_NA);
+        }
+        return BigDecimal.valueOf(talent).setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private void editYouthTalent(PlayerProfile player) {
+        JuniorProfile junior = findMatchingJunior(player);
+        double initialSkill = 0;
+        int trainingWeeks = 0;
+        double finalSkill = player.getInitialSkillSum() / 3.0;
+        if (junior != null && junior.getInitialSkill() != JR_NO_DATA) {
+            initialSkill = junior.getInitialSkill();
+            trainingWeeks = junior.getInitialWeeks() - junior.getWeeks();
+        }
+        if (player.hasJuniorTalentInputs()) {
+            initialSkill = player.getJuniorTalentInitialSkill();
+            trainingWeeks = player.getJuniorTalentTrainingWeeks();
+            finalSkill = player.getJuniorTalentFinalSkill();
+        }
+
+        final JSpinner initialInput = new JSpinner(new SpinnerNumberModel(
+                initialSkill, -1000.0, 1000.0, 0.1));
+        final JSpinner weeksInput = new JSpinner(new SpinnerNumberModel(
+                trainingWeeks, -10000, 10000, 1));
+        final JSpinner finalInput = new JSpinner(new SpinnerNumberModel(
+                finalSkill, -1000.0, 1000.0, 0.01));
+        final JLabel estimateValue = new JLabel();
+        final JLabel minimumValue = new JLabel();
+        final JLabel maximumValue = new JLabel();
+        final Runnable updateEstimates = new Runnable() {
+            public void run() {
+                double initial = ((Number)initialInput.getValue()).doubleValue();
+                int weeks = ((Number)weeksInput.getValue()).intValue();
+                double finalSkillValue = ((Number)finalInput.getValue()).doubleValue();
+                estimateValue.setText(formatTalent(calculateTalent(weeks, initial, finalSkillValue)));
+                minimumValue.setText(formatTalent(calculateTalent(weeks, initial+2, finalSkillValue)));
+                maximumValue.setText(formatTalent(calculateTalent(weeks, initial-2, finalSkillValue)));
+            }
+        };
+        javax.swing.event.ChangeListener recalculate = new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent event) {
+                updateEstimates.run();
+            }
+        };
+        initialInput.addChangeListener(recalculate);
+        weeksInput.addChangeListener(recalculate);
+        finalInput.addChangeListener(recalculate);
+
+        JPanel panel = new JPanel(new GridLayout(0, 2, 8, 4));
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_INITIAL)));
+        panel.add(initialInput);
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_WEEKS)));
+        panel.add(weeksInput);
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_FINAL)));
+        panel.add(finalInput);
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_ESTIMATE)));
+        panel.add(estimateValue);
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_MINIMUM)));
+        panel.add(minimumValue);
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_MAXIMUM)));
+        panel.add(maximumValue);
+        updateEstimates.run();
+
+        Object[] buttons = {
+            labelManager.getLabel(TXT_JUNIOR_TALENT_SAVE),
+            labelManager.getLabel(TXT_JUNIOR_TALENT_RESET),
+            labelManager.getLabel(TXT_JUNIOR_TALENT_CANCEL)
+        };
+        int result = JOptionPane.showOptionDialog(this, panel,
+                labelManager.getLabel(TXT_JUNIOR_TALENT_TITLE) + " - " + player.getFullName(),
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, buttons[0]);
+        if (result == 0) {
+            player.setJuniorTalentInputs(
+                    ((Number)initialInput.getValue()).doubleValue(),
+                    ((Number)weeksInput.getValue()).intValue(),
+                    ((Number)finalInput.getValue()).doubleValue());
+            refreshTable();
+        }
+        else if (result == 1) {
+            player.clearJuniorTalentInputs();
+            refreshTable();
+        }
     }
 
     /* ####################################################################### */

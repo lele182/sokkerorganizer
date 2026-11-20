@@ -213,6 +213,17 @@ public final class Constants {
         public static final String TXT_DATA_MANAGER   = "datamanager";
         public static final String TXT_SETTINGS       = "settings";
         public static final String TXT_JUNIOR_SCHOOL  = "juniorschool";
+        public static final String TXT_JUNIOR_TALENT_TITLE = "junior_talent_title";
+        public static final String TXT_JUNIOR_TALENT_INITIAL = "junior_talent_initial";
+        public static final String TXT_JUNIOR_TALENT_WEEKS = "junior_talent_weeks";
+        public static final String TXT_JUNIOR_TALENT_FINAL = "junior_talent_final";
+        public static final String TXT_JUNIOR_TALENT_ESTIMATE = "junior_talent_estimate";
+        public static final String TXT_JUNIOR_TALENT_MINIMUM = "junior_talent_minimum";
+        public static final String TXT_JUNIOR_TALENT_MAXIMUM = "junior_talent_maximum";
+        public static final String TXT_JUNIOR_TALENT_SAVE = "junior_talent_save";
+        public static final String TXT_JUNIOR_TALENT_RESET = "junior_talent_reset";
+        public static final String TXT_JUNIOR_TALENT_CANCEL = "junior_talent_cancel";
+        public static final String TXT_JUNIOR_TALENT_NA = "junior_talent_na";
         public static final String TXT_COACH_OFFICE   = "coachoffice";
         public static final String TXT_STADIUM        = "stadium";
         public static final String TXT_LEAGUETABLE    = "leaguetable";

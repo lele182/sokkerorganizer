@@ -38,6 +38,10 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     private char squadAssignment;
     private boolean sendToNTDB;
     private String managerNotes;
+    private boolean hasJuniorTalentInputs;
+    private double juniorTalentInitialSkill;
+    private int juniorTalentTrainingWeeks;
+    private double juniorTalentFinalSkill;
 
     transient private PlayerData latestData;
     transient private PlayerData previousToLatestData;
@@ -186,6 +190,17 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     public short getCountryFrom() { return countryFrom; }
     public int getOwnerTeamId() { return ownerTeamId; }
     public int getSourceTeamId() { return juniorTeamId; }
+    public boolean hasJuniorTalentInputs() { return hasJuniorTalentInputs; }
+    public double getJuniorTalentInitialSkill() { return juniorTalentInitialSkill; }
+    public int getJuniorTalentTrainingWeeks() { return juniorTalentTrainingWeeks; }
+    public double getJuniorTalentFinalSkill() { return juniorTalentFinalSkill; }
+    public void setJuniorTalentInputs(double initialSkill, int trainingWeeks, double finalSkill) {
+        juniorTalentInitialSkill = initialSkill;
+        juniorTalentTrainingWeeks = trainingWeeks;
+        juniorTalentFinalSkill = finalSkill;
+        hasJuniorTalentInputs = true;
+    }
+    public void clearJuniorTalentInputs() { hasJuniorTalentInputs = false; }
     public int getInitialSkillSum() {
         if (data.isEmpty()) throw new IllegalStateException("Player has no skill history");
         PlayerData initialData = data.get(data.firstKey());
