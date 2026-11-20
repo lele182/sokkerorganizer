@@ -115,6 +115,28 @@ public class JuniorProfile implements java.io.Serializable, Comparable<JuniorPro
         if (data.size() == 0) return JR_NO_DATA;
         return data.get( data.firstKey() ).getSkill();
     }
+    public String getWeeklySkillRecord() {
+        if (data.isEmpty() || getInitialSkill() == JR_NO_DATA) return "";
+        TreeMap<Integer, Short> skillsByTrainingWeek = new TreeMap<Integer, Short>();
+        skillsByTrainingWeek.put(Integer.valueOf(0), Short.valueOf(getInitialSkill()));
+        for (JuniorData juniorData : data.values()) {
+            int trainingWeek = getInitialWeeks() - juniorData.getWeeks();
+            if (trainingWeek >= 0 && juniorData.getSkill() >= 0) {
+                skillsByTrainingWeek.put(Integer.valueOf(trainingWeek), Short.valueOf(juniorData.getSkill()));
+            }
+        }
+        int lastTrainingWeek = getInitialWeeks() - getWeeks();
+        StringBuilder record = new StringBuilder();
+        Short latestSkill = null;
+        for (int week = 0; week <= lastTrainingWeek; week++) {
+            Short weeklySkill = skillsByTrainingWeek.get(Integer.valueOf(week));
+            if (weeklySkill != null) latestSkill = weeklySkill;
+            if (latestSkill == null) continue;
+            if (record.length() > 0) record.append(',');
+            record.append(latestSkill.shortValue());
+        }
+        return record.toString();
+    }
     public short getSkillupCount() {
         if (data.size() == 0) return 0;
         if (getLatestData()==null) return 0;

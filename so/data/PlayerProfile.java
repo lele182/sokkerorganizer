@@ -41,7 +41,7 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     private boolean hasJuniorTalentInputs;
     private double juniorTalentInitialSkill;
     private int juniorTalentTrainingWeeks;
-    private double juniorTalentFinalSkill;
+    private String juniorTalentWeeklySkills;
 
     transient private PlayerData latestData;
     transient private PlayerData previousToLatestData;
@@ -193,14 +193,17 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     public boolean hasJuniorTalentInputs() { return hasJuniorTalentInputs; }
     public double getJuniorTalentInitialSkill() { return juniorTalentInitialSkill; }
     public int getJuniorTalentTrainingWeeks() { return juniorTalentTrainingWeeks; }
-    public double getJuniorTalentFinalSkill() { return juniorTalentFinalSkill; }
-    public void setJuniorTalentInputs(double initialSkill, int trainingWeeks, double finalSkill) {
+    public String getJuniorTalentWeeklySkills() { return juniorTalentWeeklySkills; }
+    public void setJuniorTalentInputs(double initialSkill, int trainingWeeks, String weeklySkills) {
         juniorTalentInitialSkill = initialSkill;
         juniorTalentTrainingWeeks = trainingWeeks;
-        juniorTalentFinalSkill = finalSkill;
+        juniorTalentWeeklySkills = weeklySkills == null ? "" : weeklySkills;
         hasJuniorTalentInputs = true;
     }
-    public void clearJuniorTalentInputs() { hasJuniorTalentInputs = false; }
+    public void clearJuniorTalentInputs() {
+        hasJuniorTalentInputs = false;
+        juniorTalentWeeklySkills = null;
+    }
     public int getInitialSkillSum() {
         if (data.isEmpty()) throw new IllegalStateException("Player has no skill history");
         PlayerData initialData = data.get(data.firstKey());

@@ -680,13 +680,26 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
     }
 
     private String getYouthTalent(PlayerProfile player) {
+        double finalSkill = player.getInitialSkillSum() / 3.0;
+        double initialSkill;
+        int trainingWeeks;
+        String weeklySkills = "";
         if (player.hasJuniorTalentInputs()) {
-            return formatTalent(calculateTalent(player.getJuniorTalentTrainingWeeks(),
-                    player.getJuniorTalentInitialSkill(), player.getJuniorTalentFinalSkill()));
+            initialSkill = player.getJuniorTalentInitialSkill();
+            trainingWeeks = player.getJuniorTalentTrainingWeeks();
+            weeklySkills = player.getJuniorTalentWeeklySkills();
+        } else {
+            JuniorProfile formerJunior = findMatchingJunior(player);
+            if (formerJunior == null || formerJunior.getInitialSkill() == JR_NO_DATA) return null;
+            initialSkill = formerJunior.getInitialSkill();
+            trainingWeeks = formerJunior.getInitialWeeks() - formerJunior.getWeeks();
+            weeklySkills = formerJunior.getWeeklySkillRecord();
         }
-        JuniorProfile formerJunior = findMatchingJunior(player);
-        if (formerJunior == null || formerJunior.getInitialSkill() == JR_NO_DATA) return null;
-        return formatTalent(formerJunior.getTalent(player.getInitialSkillSum() / 3.0));
+        try {
+            return formatTalentEstimate(estimateTalent(trainingWeeks, initialSkill, finalSkill, weeklySkills));
+        } catch (IllegalArgumentException exception) {
+            return labelManager.getLabel(TXT_JUNIOR_TALENT_INVALID_HISTORY);
+        }
     }
 
     private JuniorProfile findMatchingJunior(PlayerProfile player) {
@@ -706,40 +719,98 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         return first != null && second != null && first.trim().equalsIgnoreCase(second.trim());
     }
 
-    private double calculateTalent(int trainingWeeks, double initialSkill, double finalSkill) {
+    private static double calculateTalent(int trainingWeeks, double initialSkill, double finalSkill) {
         double skillGain = finalSkill - initialSkill;
-        if (trainingWeeks <= 0 || skillGain <= 0) return Double.NaN;
-        return trainingWeeks / skillGain;
+        if (trainingWeeks <= 0 || skillGain <= 0) return 10;
+        return Math.max(3, Math.min(10, trainingWeeks / skillGain));
     }
 
     private String formatTalent(double talent) {
-        if (Double.isNaN(talent) || Double.isInfinite(talent) || talent <= 0) {
-            return labelManager.getLabel(TXT_JUNIOR_TALENT_NA);
-        }
         return BigDecimal.valueOf(talent).setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private static TalentEstimate estimateTalent(int trainingWeeks, double initialSkill, double finalSkill,
+            String weeklySkills) {
+        double initial = Math.max(0, Math.min(initialSkill, finalSkill));
+        double minimumInitial = Math.max(0, initial - 2);
+        double maximumInitial = Math.min(initial + 2, finalSkill);
+        ArrayList<Double> recordedSkills = parseWeeklySkills(weeklySkills);
+        for (int week = 1; week < recordedSkills.size(); week++) {
+            double weeklySkill = recordedSkills.get(week);
+            if (weeklySkill < recordedSkills.get(week - 1)) {
+                throw new IllegalArgumentException("Weekly skills cannot decrease");
+            }
+            minimumInitial = Math.max(minimumInitial, weeklySkill - 2 * week);
+            maximumInitial = Math.min(maximumInitial, weeklySkill);
+        }
+        if (minimumInitial > maximumInitial) {
+            throw new IllegalArgumentException("Weekly skills are incompatible with the initial skill range");
+        }
+        double estimateInitial = Math.max(minimumInitial, Math.min(initial, maximumInitial));
+        double firstTalent = calculateTalent(trainingWeeks, minimumInitial, finalSkill);
+        double secondTalent = calculateTalent(trainingWeeks, maximumInitial, finalSkill);
+        return new TalentEstimate(calculateTalent(trainingWeeks, estimateInitial, finalSkill),
+                Math.min(firstTalent, secondTalent), Math.max(firstTalent, secondTalent));
+    }
+
+    private static ArrayList<Double> parseWeeklySkills(String weeklySkills) {
+        ArrayList<Double> skills = new ArrayList<Double>();
+        if (weeklySkills == null || weeklySkills.trim().length() == 0) return skills;
+        String[] values = weeklySkills.split(",", -1);
+        for (String value : values) {
+            try {
+                double skill = Double.parseDouble(value.trim());
+                if (Double.isNaN(skill) || Double.isInfinite(skill) || skill < 0) {
+                    throw new NumberFormatException();
+                }
+                skills.add(Double.valueOf(skill));
+            } catch (NumberFormatException exception) {
+                throw new IllegalArgumentException("Invalid weekly skill value");
+            }
+        }
+        return skills;
+    }
+
+    private String formatTalentEstimate(TalentEstimate estimate) {
+        return formatTalent(estimate.estimate) + " [" + formatTalent(estimate.minimum)
+                + "-" + formatTalent(estimate.maximum) + "]";
+    }
+
+    private static class TalentEstimate {
+        private final double estimate;
+        private final double minimum;
+        private final double maximum;
+
+        private TalentEstimate(double estimate, double minimum, double maximum) {
+            this.estimate = estimate;
+            this.minimum = minimum;
+            this.maximum = maximum;
+        }
     }
 
     private void editYouthTalent(PlayerProfile player) {
         JuniorProfile junior = findMatchingJunior(player);
-        double initialSkill = 0;
-        int trainingWeeks = 0;
         double finalSkill = player.getInitialSkillSum() / 3.0;
+        double initialSkill = finalSkill;
+        int trainingWeeks = 0;
+        String weeklySkills = "";
         if (junior != null && junior.getInitialSkill() != JR_NO_DATA) {
             initialSkill = junior.getInitialSkill();
             trainingWeeks = junior.getInitialWeeks() - junior.getWeeks();
+            weeklySkills = junior.getWeeklySkillRecord();
         }
         if (player.hasJuniorTalentInputs()) {
             initialSkill = player.getJuniorTalentInitialSkill();
             trainingWeeks = player.getJuniorTalentTrainingWeeks();
-            finalSkill = player.getJuniorTalentFinalSkill();
+            weeklySkills = player.getJuniorTalentWeeklySkills();
         }
+        initialSkill = Math.max(0, Math.min(initialSkill, finalSkill));
 
         final JSpinner initialInput = new JSpinner(new SpinnerNumberModel(
-                initialSkill, -1000.0, 1000.0, 0.1));
+                initialSkill, 0.0, finalSkill, 0.1));
         final JSpinner weeksInput = new JSpinner(new SpinnerNumberModel(
-                trainingWeeks, -10000, 10000, 1));
-        final JSpinner finalInput = new JSpinner(new SpinnerNumberModel(
-                finalSkill, -1000.0, 1000.0, 0.01));
+                Math.max(0, trainingWeeks), 0, 10000, 1));
+        final javax.swing.JTextField weeklySkillsInput = new javax.swing.JTextField(weeklySkills, 16);
         final JLabel estimateValue = new JLabel();
         final JLabel minimumValue = new JLabel();
         final JLabel maximumValue = new JLabel();
@@ -747,10 +818,17 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             public void run() {
                 double initial = ((Number)initialInput.getValue()).doubleValue();
                 int weeks = ((Number)weeksInput.getValue()).intValue();
-                double finalSkillValue = ((Number)finalInput.getValue()).doubleValue();
-                estimateValue.setText(formatTalent(calculateTalent(weeks, initial, finalSkillValue)));
-                minimumValue.setText(formatTalent(calculateTalent(weeks, initial+2, finalSkillValue)));
-                maximumValue.setText(formatTalent(calculateTalent(weeks, initial-2, finalSkillValue)));
+                try {
+                    TalentEstimate estimate = estimateTalent(weeks, initial, finalSkill,
+                            weeklySkillsInput.getText());
+                    estimateValue.setText(formatTalent(estimate.estimate));
+                    minimumValue.setText(formatTalent(estimate.minimum));
+                    maximumValue.setText(formatTalent(estimate.maximum));
+                } catch (IllegalArgumentException exception) {
+                    estimateValue.setText(labelManager.getLabel(TXT_JUNIOR_TALENT_INVALID_HISTORY));
+                    minimumValue.setText("");
+                    maximumValue.setText("");
+                }
             }
         };
         javax.swing.event.ChangeListener recalculate = new javax.swing.event.ChangeListener() {
@@ -760,7 +838,11 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         };
         initialInput.addChangeListener(recalculate);
         weeksInput.addChangeListener(recalculate);
-        finalInput.addChangeListener(recalculate);
+        weeklySkillsInput.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent event) { updateEstimates.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent event) { updateEstimates.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent event) { updateEstimates.run(); }
+        });
 
         JPanel panel = new JPanel(new GridLayout(0, 2, 8, 4));
         panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_INITIAL)));
@@ -768,7 +850,9 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_WEEKS)));
         panel.add(weeksInput);
         panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_FINAL)));
-        panel.add(finalInput);
+        panel.add(new JLabel(formatTalent(finalSkill)));
+        panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_WEEKLY_SKILLS)));
+        panel.add(weeklySkillsInput);
         panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_ESTIMATE)));
         panel.add(estimateValue);
         panel.add(new JLabel(labelManager.getLabel(TXT_JUNIOR_TALENT_MINIMUM)));
@@ -786,10 +870,20 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 labelManager.getLabel(TXT_JUNIOR_TALENT_TITLE) + " - " + player.getFullName(),
                 JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, buttons[0]);
         if (result == 0) {
+            try {
+                estimateTalent(((Number)weeksInput.getValue()).intValue(),
+                        ((Number)initialInput.getValue()).doubleValue(), finalSkill,
+                        weeklySkillsInput.getText());
+            } catch (IllegalArgumentException exception) {
+                JOptionPane.showMessageDialog(this,
+                        labelManager.getLabel(TXT_JUNIOR_TALENT_INVALID_HISTORY),
+                        labelManager.getLabel(TXT_JUNIOR_TALENT_TITLE), JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             player.setJuniorTalentInputs(
                     ((Number)initialInput.getValue()).doubleValue(),
                     ((Number)weeksInput.getValue()).intValue(),
-                    ((Number)finalInput.getValue()).doubleValue());
+                    weeklySkillsInput.getText().trim());
             refreshTable();
         }
         else if (result == 1) {
