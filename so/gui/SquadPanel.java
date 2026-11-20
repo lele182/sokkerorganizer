@@ -30,6 +30,12 @@ import java.awt.Color;
 import java.awt.Insets;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.BasicStroke;
+import java.awt.RenderingHints;
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.QuadCurve2D;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseListener;
@@ -659,14 +665,21 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
 
     private String getYouthTalent(PlayerProfile player) {
         if (juniorSchool == null) return null;
+        JuniorProfile matchingJunior = null;
         for (JuniorProfile formerJunior : juniorSchool.getFormerJuniorsList()) {
-            if (formerJunior.getId() == player.getId()) {
-                if (formerJunior.getInitialSkill() == JR_NO_DATA) return null;
-                double talent = formerJunior.getTalent(player.getInitialSkillSum() / 3.0);
-                return BigDecimal.valueOf(talent).setScale(2, RoundingMode.HALF_UP).toPlainString();
+            if (sameName(formerJunior.getName(), player.getName())
+                    && sameName(formerJunior.getSurname(), player.getSurname())) {
+                if (matchingJunior != null) return null;
+                matchingJunior = formerJunior;
             }
         }
-        return null;
+        if (matchingJunior == null || matchingJunior.getInitialSkill() == JR_NO_DATA) return null;
+        double talent = matchingJunior.getTalent(player.getInitialSkillSum() / 3.0);
+        return BigDecimal.valueOf(talent).setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private boolean sameName(String first, String second) {
+        return first != null && second != null && first.trim().equalsIgnoreCase(second.trim());
     }
 
     /* ####################################################################### */
@@ -911,18 +924,27 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         }
 
         private class YouthLeafIcon implements javax.swing.Icon {
-            public int getIconWidth() { return 14; }
-            public int getIconHeight() { return 14; }
+            public int getIconWidth() { return 16; }
+            public int getIconHeight() { return 16; }
 
             public void paintIcon(java.awt.Component component, Graphics graphics, int x, int y) {
-                int[] xPoints = {x+2, x+3, x+6, x+11, x+12, x+9, x+6, x+3};
-                int[] yPoints = {y+9, y+5, y+2, y+2, y+6, y+10, y+12, y+11};
-                Color previousColor = graphics.getColor();
-                graphics.setColor(new Color(45, 145, 55));
-                graphics.fillPolygon(xPoints, yPoints, xPoints.length);
-                graphics.setColor(new Color(30, 100, 40));
-                graphics.drawLine(x+3, y+10, x+10, y+3);
-                graphics.setColor(previousColor);
+                Graphics2D g2 = (Graphics2D)graphics.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Path2D leaf = new Path2D.Float();
+                leaf.moveTo(x+2, y+14);
+                leaf.curveTo(x+1, y+7, x+6, y+1, x+14, y+1);
+                leaf.curveTo(x+15, y+9, x+9, y+15, x+2, y+14);
+                leaf.closePath();
+                g2.setColor(new Color(92, 181, 73));
+                g2.fill(leaf);
+                g2.setColor(new Color(34, 105, 43));
+                g2.setStroke(new BasicStroke(0.9f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.draw(leaf);
+                g2.draw(new Line2D.Float(x+3, y+13, x+13, y+3));
+                g2.setColor(new Color(55, 132, 52));
+                g2.draw(new QuadCurve2D.Float(x+6, y+10, x+6, y+7, x+4, y+6));
+                g2.draw(new QuadCurve2D.Float(x+8, y+8, x+9, y+6, x+12, y+5));
+                g2.dispose();
             }
         }
 
