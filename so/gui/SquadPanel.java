@@ -61,7 +61,6 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
     private static final String CMD_MANAGER_NOTES     = "mn";
     private static final double MIN_TALENT_SLOPE = 1.0 / 12.0;
     private static final double MAX_TALENT_SLOPE = 1.0 / 3.0;
-    private static final double TALENT_ERROR_STEP = 0.25;
 
     private JPanel summaryPanel;
     private Box dateChooserPanel;
@@ -770,29 +769,12 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
 
     private static double estimateSiteTalent(ArrayList<Double> skills) {
         if (skills.size() < 2) return 10;
-        double[] correctedSkills = new double[skills.size()];
+        double[] values = new double[skills.size()];
         for (int i = 0; i < skills.size(); i++) {
-            correctedSkills[i] = skills.get(i).doubleValue();
+            values[i] = skills.get(i).doubleValue();
         }
 
-        double[] fit = calculateLinearFit(correctedSkills);
-        double[] correctionThresholds = {4, 3, 2};
-        for (double threshold : correctionThresholds) {
-            for (int week = 0; week < correctedSkills.length; week++) {
-                double difference = correctedSkills[week] - predictedSkill(fit, week);
-                if (difference > threshold * TALENT_ERROR_STEP) {
-                    correctedSkills[week] -= 1;
-                    fit = calculateLinearFit(correctedSkills);
-                }
-                difference = correctedSkills[week] - predictedSkill(fit, week);
-                if (difference < -threshold * TALENT_ERROR_STEP) {
-                    correctedSkills[week] += 1;
-                    fit = calculateLinearFit(correctedSkills);
-                }
-            }
-        }
-
-        fit = calculateLinearFit(correctedSkills);
+        double[] fit = calculateLinearFit(values);
         double slope = Math.max(MIN_TALENT_SLOPE, Math.min(MAX_TALENT_SLOPE, fit[0]));
         return clampTalent(1.0 / slope);
     }
@@ -815,10 +797,6 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         return new double[] {slope, intercept};
     }
 
-    private static double predictedSkill(double[] fit, int week) {
-        return Math.max(0, Math.min(18, fit[0] * week + fit[1]));
-    }
-
     private static double clampTalent(double talent) {
         if (Double.isNaN(talent) || Double.isInfinite(talent) || talent <= 0) return 10;
         return Math.max(3, Math.min(10, talent));
@@ -834,10 +812,10 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         for (String value : values) {
             try {
                 double skill = Double.parseDouble(value.trim());
-                if (Double.isNaN(skill) || Double.isInfinite(skill) || skill < 0) {
+                if (Double.isNaN(skill) || Double.isInfinite(skill) || skill < 0 || skill >= 19) {
                     throw new NumberFormatException();
                 }
-                skills.add(Double.valueOf(skill));
+                skills.add(Double.valueOf((int)skill));
             } catch (NumberFormatException exception) {
                 throw new IllegalArgumentException("Invalid weekly skill value");
             }
@@ -849,7 +827,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         if (skillText == null || skillText.trim().length() == 0) return null;
         try {
             double skill = Double.parseDouble(skillText.trim());
-            if (Double.isNaN(skill) || Double.isInfinite(skill) || skill < 0 || skill > 19
+            if (Double.isNaN(skill) || Double.isInfinite(skill) || skill < 0 || skill >= 19
                     || skill != Math.floor(skill)) {
                 throw new NumberFormatException();
             }
