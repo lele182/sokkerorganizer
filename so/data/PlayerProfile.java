@@ -118,7 +118,7 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
         data.put(pp.data.lastKey(), pp.data.get( pp.data.lastKey() ) );
         if (newerUpdate) {
             this.ownerTeamId = pp.ownerTeamId;
-            if (pp.juniorTeamId>0) this.juniorTeamId = pp.juniorTeamId;
+            this.juniorTeamId = pp.juniorTeamId;
             name = pp.name;
             surname = pp.surname;
             if (countryFrom == NO_COUNTRY_SET) countryFrom = pp.countryFrom;
@@ -186,6 +186,13 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     public short getCountryFrom() { return countryFrom; }
     public int getOwnerTeamId() { return ownerTeamId; }
     public int getSourceTeamId() { return juniorTeamId; }
+    public int getInitialSkillSum() {
+        if (data.isEmpty()) throw new IllegalStateException("Player has no skill history");
+        PlayerData initialData = data.get(data.firstKey());
+        return initialData.getStamina() + initialData.getPace() + initialData.getTechnique()
+                + initialData.getPassing() + initialData.getKeeper() + initialData.getDefender()
+                + initialData.getPlaymaker() + initialData.getScorer();
+    }
     public boolean isActive() { return active; }
     public void setActive(boolean a) { active = a; }
     public int getPreferredPosition() { return preferredPosition; }

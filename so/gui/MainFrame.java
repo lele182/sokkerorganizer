@@ -334,7 +334,7 @@ public final class MainFrame extends JFrame implements WindowListener, ActionLis
         /* tabbedPane.addTab( label, icon, component, tooltip ); */
         String title = labelManager.getLabel(TXT_SQUAD);
         if (loadingFrame != null) loadingFrame.displayLoadingMessage(title);
-        squadPanel = new SquadPanel(labelManager, options, team, roster, matchRepo);
+        squadPanel = new SquadPanel(labelManager, options, team, roster, matchRepo, school);
         tabbedPane.addTab(title, null, squadPanel, null);
 
         title = labelManager.getLabel(TXT_PLAYER_STATS);

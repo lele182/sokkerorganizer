@@ -28,7 +28,6 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Color;
 import java.awt.Insets;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.event.ItemListener;
@@ -41,6 +40,8 @@ import java.util.Date;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.SortedSet;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -65,6 +66,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
     private TeamDetails team;
     private PlayerRoster roster;
     private MatchRepository matchRepo;
+    private JuniorSchool juniorSchool;
     private PlayerStatsPanel playerStatsPanel;
     private JCalendar dateChooserCalendar;
     private JComboBox datesCombo;
@@ -75,13 +77,15 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         lbldiffTotalSalary, lbldiffAvgSalary, lbldiffTotalValue, lbldiffAvgValue, lbldiffRank, lbldiffMoney,
         lbldiffFans, lbldiffFanClubMood;
 
-    public SquadPanel(LabelManager lm, Options opt, TeamDetails td, PlayerRoster ros, MatchRepository repo) {
+    public SquadPanel(LabelManager lm, Options opt, TeamDetails td, PlayerRoster ros,
+                      MatchRepository repo, JuniorSchool juniors) {
         super(new GridBagLayout());
         labelManager = lm;
         options = opt;
         team = td;
         roster = ros;
         matchRepo = repo;
+        juniorSchool = juniors;
         compareDateIsChanging = false;
         dateChooserCalendar = new JCalendar();
 
@@ -251,10 +255,10 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             if (cm.getColumn(i).getModelIndex()==19) {
                 TableColumn statusColumn = cm.getColumn(i);
                 TableColumnData statusColumnData = (TableColumnData)statusColumn.getIdentifier();
-                if (statusColumn.getWidth()<95) {
-                    statusColumnData.setWidth(95);
-                    statusColumn.setPreferredWidth(95);
-                    statusColumn.setWidth(95);
+                if (statusColumn.getWidth()<145) {
+                    statusColumnData.setWidth(145);
+                    statusColumn.setPreferredWidth(145);
+                    statusColumn.setWidth(145);
                 }
                 t.moveColumn(i, 0);
                 break;
@@ -653,6 +657,18 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         }
     }
 
+    private String getYouthTalent(PlayerProfile player) {
+        if (juniorSchool == null) return null;
+        for (JuniorProfile formerJunior : juniorSchool.getFormerJuniorsList()) {
+            if (formerJunior.getId() == player.getId()) {
+                if (formerJunior.getInitialSkill() == JR_NO_DATA) return null;
+                double talent = formerJunior.getTalent(player.getInitialSkillSum() / 3.0);
+                return BigDecimal.valueOf(talent).setScale(2, RoundingMode.HALF_UP).toPlainString();
+            }
+        }
+        return null;
+    }
+
     /* ####################################################################### */
     private class PlayerTableModel extends AbstractTableModel {
         private Object [][] cache;
@@ -672,11 +688,13 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 cache = new Object[rows][cols];
                 sumsCache = new int[cols];
                 for (int r=0; r<rows; r++) {
+                    PlayerProfile player = roster.getPlayersList().get(r);
                     for (int c=0; c<cols; c++) {
-                        cache[r][c] = roster.getPlayersList().get(r).getData(c);
+                        cache[r][c] = player.getData(c);
                         if (c==19) {
-                            cache[r][c] = new PlayerStatusData((DataPair)cache[r][c],
-                                    roster.getPlayersList().get(r).getSourceTeamId()>0);
+                            boolean fromYouthTeam = player.getOwnerTeamId() == player.getSourceTeamId();
+                            cache[r][c] = new PlayerStatusData((DataPair)cache[r][c], fromYouthTeam,
+                                    fromYouthTeam ? getYouthTalent(player) : null);
                         }
                     }
                 }
@@ -821,10 +839,12 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
 
         private class PlayerStatusData extends DataPair {
             private final boolean fromYouthTeam;
+            private final String youthTalent;
 
-            private PlayerStatusData(DataPair status, boolean youthPlayer) {
+            private PlayerStatusData(DataPair status, boolean youthPlayer, String talent) {
                 super(DATA_STATUS, status.getValue(), status.getDecimalValue());
                 fromYouthTeam = youthPlayer;
+                youthTalent = talent;
             }
         }
 
@@ -832,8 +852,13 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             private final JLabel cardsLabel = new JLabel();
             private final JLabel injuryLabel = new JLabel();
             private final JLabel youthLabel = new JLabel();
-            private final JLabel talentSpace = new JLabel(" ");
+            private final JLabel talentLabel = new JLabel();
             private final YouthLeafIcon youthLeafIcon = new YouthLeafIcon();
+            private final CardIcon yellowCardIcon = new CardIcon(1, new Color(255, 215, 0));
+            private final CardIcon twoYellowCardsIcon = new CardIcon(2, new Color(255, 215, 0));
+            private final CardIcon redCardIcon = new CardIcon(1, new Color(210, 35, 35));
+            private final InjuryIcon greenInjuryIcon = new InjuryIcon(new Color(45, 145, 55));
+            private final InjuryIcon redInjuryIcon = new InjuryIcon(new Color(210, 35, 35));
 
             private PlayerStatusCellRenderer() {
                 super(new FlowLayout(FlowLayout.LEFT, 2, 0));
@@ -843,12 +868,11 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 injuryLabel.setOpaque(false);
                 injuryLabel.setHorizontalTextPosition(JLabel.TRAILING);
                 youthLabel.setOpaque(false);
-                talentSpace.setOpaque(false);
-                talentSpace.setPreferredSize(new Dimension(30, 16));
+                talentLabel.setOpaque(false);
                 add(cardsLabel);
                 add(injuryLabel);
                 add(youthLabel);
-                add(talentSpace);
+                add(talentLabel);
             }
 
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
@@ -858,27 +882,30 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 injuryLabel.setIcon(null);
                 injuryLabel.setText("");
                 youthLabel.setIcon(status.fromYouthTeam ? youthLeafIcon : null);
+                talentLabel.setText(status.youthTalent == null ? "" : "(" + status.youthTalent + ")");
 
                 switch (status.getValue()) {
                 case 1:
-                    cardsLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_YELLOWCARD));
+                    cardsLabel.setIcon(yellowCardIcon);
                     break;
                 case 2:
-                    cardsLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_YELLOWCARD2));
+                    cardsLabel.setIcon(twoYellowCardsIcon);
                     break;
                 case 3:
+                    cardsLabel.setIcon(redCardIcon);
+                    break;
                 default:
-                    if (status.getValue()>0) cardsLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_REDCARD));
                     break;
                 }
                 int injuryDays = (int)Math.ceil(status.getDecimalValue());
                 if (injuryDays>0) {
-                    injuryLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_INJURY));
-                    injuryLabel.setText(Integer.toString(injuryDays));
+                    injuryLabel.setIcon(injuryDays>7 ? redInjuryIcon : greenInjuryIcon);
+                    injuryLabel.setText(" (" + injuryDays + ")");
                 }
                 setBackground(selected ? table.getSelectionBackground() : table.getBackground());
                 setForeground(selected ? table.getSelectionForeground() : table.getForeground());
                 injuryLabel.setForeground(getForeground());
+                talentLabel.setForeground(getForeground());
                 return this;
             }
         }
@@ -895,6 +922,58 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 graphics.fillPolygon(xPoints, yPoints, xPoints.length);
                 graphics.setColor(new Color(30, 100, 40));
                 graphics.drawLine(x+3, y+10, x+10, y+3);
+                graphics.setColor(previousColor);
+            }
+        }
+
+        private class CardIcon implements javax.swing.Icon {
+            private final int cards;
+            private final Color color;
+
+            private CardIcon(int cards, Color color) {
+                this.cards = cards;
+                this.color = color;
+            }
+
+            public int getIconWidth() { return 14; }
+            public int getIconHeight() { return 14; }
+
+            public void paintIcon(java.awt.Component component, Graphics graphics, int x, int y) {
+                Color previousColor = graphics.getColor();
+                if (cards==2) {
+                    paintCard(graphics, x+1, y+3);
+                    paintCard(graphics, x+5, y+1);
+                }
+                else paintCard(graphics, x+3, y+1);
+                graphics.setColor(previousColor);
+            }
+
+            private void paintCard(Graphics graphics, int x, int y) {
+                graphics.setColor(color);
+                graphics.fillRect(x, y, 7, 11);
+                graphics.setColor(color.darker());
+                graphics.drawRect(x, y, 7, 11);
+            }
+        }
+
+        private class InjuryIcon implements javax.swing.Icon {
+            private final Color color;
+
+            private InjuryIcon(Color color) {
+                this.color = color;
+            }
+
+            public int getIconWidth() { return 14; }
+            public int getIconHeight() { return 14; }
+
+            public void paintIcon(java.awt.Component component, Graphics graphics, int x, int y) {
+                Color previousColor = graphics.getColor();
+                graphics.setColor(color);
+                graphics.fillRect(x+5, y+1, 4, 12);
+                graphics.fillRect(x+1, y+5, 12, 4);
+                graphics.setColor(color.darker());
+                graphics.drawRect(x+5, y+1, 3, 11);
+                graphics.drawRect(x+1, y+5, 11, 3);
                 graphics.setColor(previousColor);
             }
         }
