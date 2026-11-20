@@ -684,27 +684,24 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         double initialSkill;
         int trainingWeeks;
         String weeklySkills = "";
-        JuniorProfile formerJunior = null;
+        JuniorProfile formerJunior = findMatchingJunior(player);
         if (player.hasJuniorTalentInputs()) {
             initialSkill = player.getJuniorTalentInitialSkill();
             trainingWeeks = player.getJuniorTalentTrainingWeeks();
             weeklySkills = player.getJuniorTalentWeeklySkills();
         } else {
-            formerJunior = findMatchingJunior(player);
             if (formerJunior == null || formerJunior.getInitialSkill() == JR_NO_DATA) return null;
             initialSkill = formerJunior.getInitialSkill();
             trainingWeeks = formerJunior.getInitialWeeks() - formerJunior.getWeeks();
             weeklySkills = formerJunior.getWeeklySkillRecord();
         }
         try {
-            TalentEstimate estimate = formerJunior == null
-                    ? estimateTalent(trainingWeeks, initialSkill, finalSkill, weeklySkills)
-                    : estimateJuniorTalent(formerJunior, initialSkill, finalSkill, weeklySkills);
+            TalentEstimate estimate = estimateYouthTalent(formerJunior, trainingWeeks,
+                    initialSkill, finalSkill, weeklySkills);
             return formatTalentEstimate(estimate);
         } catch (IllegalArgumentException exception) {
-            TalentEstimate estimate = formerJunior == null
-                    ? estimateTalent(trainingWeeks, initialSkill, finalSkill, "")
-                    : estimateJuniorTalent(formerJunior, initialSkill, finalSkill, "");
+            TalentEstimate estimate = estimateYouthTalent(formerJunior, trainingWeeks,
+                    initialSkill, finalSkill, "");
             return formatTalentEstimate(estimate);
         }
     }
@@ -752,6 +749,15 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         double secondTalent = clampTalent(junior.getTalent(finalSkill, range.maximum));
         return new TalentEstimate(clampTalent(junior.getTalent(finalSkill, range.estimate)),
                 Math.min(firstTalent, secondTalent), Math.max(firstTalent, secondTalent));
+    }
+
+    private static TalentEstimate estimateYouthTalent(JuniorProfile junior, int trainingWeeks,
+            double initialSkill, double finalSkill, String weeklySkills) {
+        if (junior != null && junior.getInitialSkill() != JR_NO_DATA
+                && trainingWeeks == junior.getInitialWeeks() - junior.getWeeks()) {
+            return estimateJuniorTalent(junior, initialSkill, finalSkill, weeklySkills);
+        }
+        return estimateTalent(trainingWeeks, initialSkill, finalSkill, weeklySkills);
     }
 
     private static InitialSkillRange estimateInitialSkillRange(double initialSkill, double finalSkill,
@@ -858,8 +864,8 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 double initial = ((Number)initialInput.getValue()).doubleValue();
                 int weeks = ((Number)weeksInput.getValue()).intValue();
                 try {
-                    TalentEstimate estimate = estimateTalent(weeks, initial, finalSkill,
-                            weeklySkillsInput.getText());
+                    TalentEstimate estimate = estimateYouthTalent(junior, weeks, initial,
+                            finalSkill, weeklySkillsInput.getText());
                     estimateValue.setText(formatTalent(estimate.estimate));
                     minimumValue.setText(formatTalent(estimate.minimum));
                     maximumValue.setText(formatTalent(estimate.maximum));
@@ -910,7 +916,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, buttons[0]);
         if (result == 0) {
             try {
-                estimateTalent(((Number)weeksInput.getValue()).intValue(),
+                estimateYouthTalent(junior, ((Number)weeksInput.getValue()).intValue(),
                         ((Number)initialInput.getValue()).doubleValue(), finalSkill,
                         weeklySkillsInput.getText());
             } catch (IllegalArgumentException exception) {
