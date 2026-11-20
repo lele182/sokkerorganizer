@@ -42,6 +42,8 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     private double juniorTalentInitialSkill;
     private int juniorTalentTrainingWeeks;
     private String juniorTalentWeeklySkills;
+    private boolean hasJuniorTalentPrependedSkill;
+    private double juniorTalentPrependedSkill;
 
     transient private PlayerData latestData;
     transient private PlayerData previousToLatestData;
@@ -194,6 +196,19 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     public double getJuniorTalentInitialSkill() { return juniorTalentInitialSkill; }
     public int getJuniorTalentTrainingWeeks() { return juniorTalentTrainingWeeks; }
     public String getJuniorTalentWeeklySkills() { return juniorTalentWeeklySkills; }
+    public boolean hasJuniorTalentPrependedSkill() { return hasJuniorTalentPrependedSkill; }
+    public double getJuniorTalentPrependedSkill() { return juniorTalentPrependedSkill; }
+    public void setJuniorTalentPrependedSkill(double skill) {
+        juniorTalentPrependedSkill = skill;
+        hasJuniorTalentPrependedSkill = true;
+    }
+    public void clearJuniorTalentPrependedSkill() {
+        hasJuniorTalentPrependedSkill = false;
+    }
+    public void setJuniorTalentHistory(String weeklySkills) {
+        juniorTalentWeeklySkills = weeklySkills == null ? "" : weeklySkills;
+        hasJuniorTalentInputs = true;
+    }
     public void setJuniorTalentInputs(double initialSkill, int trainingWeeks, String weeklySkills) {
         juniorTalentInitialSkill = initialSkill;
         juniorTalentTrainingWeeks = trainingWeeks;
@@ -203,6 +218,7 @@ public class PlayerProfile implements java.io.Serializable, Comparable<PlayerPro
     public void clearJuniorTalentInputs() {
         hasJuniorTalentInputs = false;
         juniorTalentWeeklySkills = null;
+        clearJuniorTalentPrependedSkill();
     }
     public int getInitialSkillSum() {
         if (data.isEmpty()) throw new IllegalStateException("Player has no skill history");

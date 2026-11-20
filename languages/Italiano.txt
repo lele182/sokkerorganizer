@@ -35,6 +35,7 @@ settings=Impostazioni
 juniorschool=Giovanili
 junior_talent_title=Stima del talento giovanile
 junior_talent_initial=Skill iniziale nelle giovanili
+junior_talent_prepend_skill=Skill prima del primo dato (facoltativa)
 junior_talent_weeks=Settimane di allenamento
 junior_talent_final=Skill finale certa
 junior_talent_weekly_skills=Skill settimanali (separate da virgole)

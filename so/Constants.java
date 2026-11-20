@@ -215,6 +215,7 @@ public final class Constants {
         public static final String TXT_JUNIOR_SCHOOL  = "juniorschool";
         public static final String TXT_JUNIOR_TALENT_TITLE = "junior_talent_title";
         public static final String TXT_JUNIOR_TALENT_INITIAL = "junior_talent_initial";
+        public static final String TXT_JUNIOR_TALENT_PREPEND_SKILL = "junior_talent_prepend_skill";
         public static final String TXT_JUNIOR_TALENT_WEEKS = "junior_talent_weeks";
         public static final String TXT_JUNIOR_TALENT_FINAL = "junior_talent_final";
         public static final String TXT_JUNIOR_TALENT_WEEKLY_SKILLS = "junior_talent_weekly_skills";

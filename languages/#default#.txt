@@ -39,6 +39,7 @@ settings=Settings
 juniorschool=Junior School
 junior_talent_title=Junior talent estimate
 junior_talent_initial=Initial junior skill
+junior_talent_prepend_skill=Skill before first record (optional)
 junior_talent_weeks=Training weeks
 junior_talent_final=Certain final skill
 junior_talent_weekly_skills=Weekly skills (comma-separated)
