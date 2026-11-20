@@ -17,7 +17,7 @@ public class DebugFrame extends JFrame {
     }
     public DebugFrame(boolean visible) {
         super("Error");
-        if (visible) jta = new JTextArea("Please report this error via email to sokker@cybercafedelsur.cl\nor SK-mail to danny\n\nSokker Organizer " + (so.So.JAVAWS?"ONLINE v":" v")+ so.So.getVersion() + "\n",30,80);
+        if (visible) jta = new JTextArea("Please report this error via email to sokker@cybercafedelsur.cl\nor SK-mail to danny\n\n" + so.So.getName() + " " + (so.So.JAVAWS?"ONLINE v":"v") + so.So.getVersionString() + "\n",30,80);
         else jta = new JTextArea("",30,80);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         getContentPane().add(new JScrollPane(jta));

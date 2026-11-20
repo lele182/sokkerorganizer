@@ -151,7 +151,7 @@ public class JuniorSchoolPanel extends JPanel implements MouseListener, ActionLi
         if (cm.getColumnCount() < JUNIORCOLUMNS_COUNT ) {
             System.out.println("THIS IS NOT AN ERROR.");
             System.out.println("current Junior School Column count "+cm.getColumnCount());
-            System.out.println("Updating Junior School Panel Column model to version " + so.So.getVersion());
+            System.out.println("Updating Junior School Panel Column model to version " + so.So.getVersionString());
             for (int i=cm.getColumnCount() ; i<JUNIORCOLUMNS_COUNT; i++) {
                 System.out.println("adding new column "+i);
                 TableColumnData data = new TableColumnData(i, 110);

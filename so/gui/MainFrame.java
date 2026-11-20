@@ -798,7 +798,7 @@ public final class MainFrame extends JFrame implements WindowListener, ActionLis
         }
     }
     private void showCredits() {
-        String msg = so.So.getName() + " v" + so.So.getVersion() + " " + so.So.getReleaseStatus() + "\n" +
+        String msg = so.So.getName() + " " + so.So.getVersionString() + " " + so.So.getReleaseStatus() + "\n" +
             so.So.getHomePage() + "\n\n" +
             labelManager.getLabel(TXT_AUTHOR) + " :   " + "Daniel Gonz\u00e1lez Fisher (danny)\n" +
             labelManager.getLabel(TXT_TRANSLATOR) + " (" + options.getLanguage() + ") :   " +

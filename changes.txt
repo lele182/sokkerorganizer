@@ -1,6 +1,8 @@
 Current update:
+      - Renamed to New Sokker Organizer 0.95.1.
       - League tracking now supports 12-team divisions with 22 rounds and 6 matches per round, while retaining support for historical 8-team divisions.
 
+0.95.1 - Renamed to New Sokker Organizer.
 0.95  - height, superdivine
 
 0.94  - bugfixes.

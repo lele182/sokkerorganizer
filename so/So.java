@@ -14,8 +14,11 @@ import java.awt.Image;
 import javax.swing.UIManager;
 
 public final class So {
-    private static final String SO_NAME = "Sokker Organizer";
-    private static final double SO_VERSION = 0.95;
+    private static final String SO_NAME = "New Sokker Organizer";
+    private static final String SO_DATA_DIR_NAME = "Sokker Organizer";
+    private static final String SO_VERSION = "0.95.1";
+    // Numeric format retained for the legacy updater's version.xml.
+    private static final double SO_VERSION_NUMBER = 0.951;
     private static final String SO_RELEASE_STATUS = "BETA";
     private static final String SO_SPECIAL_MSG = "";
     private static final String DANNY_BDAY_MSG = "Happy Birthday to Danny :)";
@@ -52,7 +55,7 @@ public final class So {
             HOMEDIR = javax.swing.filechooser.FileSystemView.getFileSystemView().getDefaultDirectory();
         }
         if (HOMEDIR!=null) {
-            DIRNAME_BASEDIR = HOMEDIR.getAbsolutePath() + File.separator + SO_NAME + File.separator;
+            DIRNAME_BASEDIR = HOMEDIR.getAbsolutePath() + File.separator + SO_DATA_DIR_NAME + File.separator;
             if (!so.data.XMLHandler.ensureAccesibleDir(DIRNAME_BASEDIR)) DIRNAME_BASEDIR = "";;
         }
 
@@ -64,11 +67,11 @@ public final class So {
 
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                MainFrame main = new MainFrame(SO_NAME + " v" + SO_VERSION + ' ' + SO_RELEASE_STATUS
+                MainFrame main = new MainFrame(SO_NAME + " " + SO_VERSION
                                                + (usingOverrides?" (!) ":' ') + SO_SPECIAL_MSG, loadingFrame);
                 Calendar cal = Calendar.getInstance();
                 if (cal.get(Calendar.MONTH)==Calendar.OCTOBER && cal.get(Calendar.DATE)==22)
-                    main.setTitle(SO_NAME + " v" + SO_VERSION + ' ' + SO_RELEASE_STATUS + ' ' + DANNY_BDAY_MSG);
+                    main.setTitle(SO_NAME + " " + SO_VERSION + ' ' + DANNY_BDAY_MSG);
                 main.setVisible(true);
                 loadingFrame.dispose();
             }
@@ -88,7 +91,8 @@ public final class So {
     }
 
     public static String getName() { return SO_NAME; }
-    public static double getVersion() { return SO_VERSION; }
+    public static String getVersionString() { return SO_VERSION; }
+    public static double getVersion() { return SO_VERSION_NUMBER; }
     public static String getReleaseStatus() { return SO_RELEASE_STATUS; }
     public static String getHomePage() { return SO_HOMEPAGE; }
 

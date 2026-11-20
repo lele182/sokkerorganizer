@@ -1,4 +1,4 @@
-Sokker Organizer (SO)
+New Sokker Organizer 0.95.1 (SO)
 author: Daniel González F. (danny)
 ##################################
 

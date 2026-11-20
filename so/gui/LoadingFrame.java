@@ -28,7 +28,7 @@ public final class LoadingFrame extends javax.swing.JFrame {
         g2d.drawImage(splash.getImage(), 0, 0, null);
         g2d.setColor(java.awt.Color.WHITE);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g2d.drawString("v" + So.getVersion(), 360, 140);
+        g2d.drawString("v" + So.getVersionString(), 360, 140);
         loadingText = new JLabel("Loading SO...");
         loadingText.setOpaque(false);
         loadingText.setForeground(java.awt.Color.WHITE);

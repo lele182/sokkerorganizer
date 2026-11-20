@@ -239,7 +239,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         if (cm.getColumnCount()+1 < PLAYERCOLUMNS_COUNT ) {
             System.out.println("THIS IS NOT AN ERROR.");
             System.out.println("current Squad Column count "+cm.getColumnCount());
-            System.out.println("Updating Squad Panel Column model to version " + so.So.getVersion());
+            System.out.println("Updating Squad Panel Column model to version " + so.So.getVersionString());
             for (int i=cm.getColumnCount()+1 ; i<PLAYERCOLUMNS_COUNT; i++) {
                 System.out.println("adding new column "+i);
                 TableColumnData data = new TableColumnData(i, 50);
