@@ -28,6 +28,9 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Color;
 import java.awt.Insets;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseListener;
@@ -111,6 +114,8 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         squadTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         squadTable.setDefaultRenderer(DataPair.class, cellRenderer);
         squadTable.setDefaultRenderer(ImageIcon.class, new CountryFlagCellRenderer() );
+        squadTable.setDefaultRenderer(PlayerTableModel.PlayerStatusData.class,
+                tableModel.new PlayerStatusCellRenderer());
         JScrollPane scrollPane = new JScrollPane(squadTable);
 
         rowHeader = new JTable();
@@ -242,6 +247,19 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             options.setPlayerTableColumns(ptc);
         }
         //% BORRAR EN SIGUIENTE VERSION
+        for (int i=0; i<cm.getColumnCount(); i++) {
+            if (cm.getColumn(i).getModelIndex()==19) {
+                TableColumn statusColumn = cm.getColumn(i);
+                TableColumnData statusColumnData = (TableColumnData)statusColumn.getIdentifier();
+                if (statusColumn.getWidth()<95) {
+                    statusColumnData.setWidth(95);
+                    statusColumn.setPreferredWidth(95);
+                    statusColumn.setWidth(95);
+                }
+                t.moveColumn(i, 0);
+                break;
+            }
+        }
     }
 
     private void buildSummaryPanel() {
@@ -656,6 +674,10 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 for (int r=0; r<rows; r++) {
                     for (int c=0; c<cols; c++) {
                         cache[r][c] = roster.getPlayersList().get(r).getData(c);
+                        if (c==19) {
+                            cache[r][c] = new PlayerStatusData((DataPair)cache[r][c],
+                                    roster.getPlayersList().get(r).getSourceTeamId()>0);
+                        }
                     }
                 }
                 for (int c=4; c<=15; c++) {
@@ -795,6 +817,87 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         public void fireTableDataChanged() {
             rebuildDataCache();
             super.fireTableDataChanged();
+        }
+
+        private static class PlayerStatusData extends DataPair {
+            private final boolean fromYouthTeam;
+
+            private PlayerStatusData(DataPair status, boolean youthPlayer) {
+                super(DATA_STATUS, status.getValue(), status.getDecimalValue());
+                fromYouthTeam = youthPlayer;
+            }
+        }
+
+        private class PlayerStatusCellRenderer extends JPanel implements TableCellRenderer {
+            private final JLabel cardsLabel = new JLabel();
+            private final JLabel injuryLabel = new JLabel();
+            private final JLabel youthLabel = new JLabel();
+            private final JLabel talentSpace = new JLabel(" ");
+
+            private PlayerStatusCellRenderer() {
+                super(new FlowLayout(FlowLayout.LEFT, 2, 0));
+                setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+                setOpaque(true);
+                cardsLabel.setOpaque(false);
+                injuryLabel.setOpaque(false);
+                injuryLabel.setHorizontalTextPosition(JLabel.TRAILING);
+                youthLabel.setOpaque(false);
+                talentSpace.setOpaque(false);
+                talentSpace.setPreferredSize(new Dimension(30, 16));
+                add(cardsLabel);
+                add(injuryLabel);
+                add(youthLabel);
+                add(talentSpace);
+            }
+
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean selected, boolean focused, int row, int column) {
+                PlayerStatusData status = (PlayerStatusData)value;
+                cardsLabel.setIcon(null);
+                injuryLabel.setIcon(null);
+                injuryLabel.setText("");
+                youthLabel.setIcon(status.fromYouthTeam ? YouthLeafIcon.INSTANCE : null);
+
+                switch (status.getValue()) {
+                case 1:
+                    cardsLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_YELLOWCARD));
+                    break;
+                case 2:
+                    cardsLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_YELLOWCARD2));
+                    break;
+                case 3:
+                default:
+                    if (status.getValue()>0) cardsLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_REDCARD));
+                    break;
+                }
+                int injuryDays = (int)Math.ceil(status.getDecimalValue());
+                if (injuryDays>0) {
+                    injuryLabel.setIcon(MainFrame.getImageIcon(FILENAME_IMG_INJURY));
+                    injuryLabel.setText(Integer.toString(injuryDays));
+                }
+                setBackground(selected ? table.getSelectionBackground() : table.getBackground());
+                setForeground(selected ? table.getSelectionForeground() : table.getForeground());
+                injuryLabel.setForeground(getForeground());
+                return this;
+            }
+        }
+
+        private static class YouthLeafIcon implements javax.swing.Icon {
+            private static final YouthLeafIcon INSTANCE = new YouthLeafIcon();
+
+            public int getIconWidth() { return 14; }
+            public int getIconHeight() { return 14; }
+
+            public void paintIcon(java.awt.Component component, Graphics graphics, int x, int y) {
+                int[] xPoints = {x+2, x+3, x+6, x+11, x+12, x+9, x+6, x+3};
+                int[] yPoints = {y+9, y+5, y+2, y+2, y+6, y+10, y+12, y+11};
+                Color previousColor = graphics.getColor();
+                graphics.setColor(new Color(45, 145, 55));
+                graphics.fillPolygon(xPoints, yPoints, xPoints.length);
+                graphics.setColor(new Color(30, 100, 40));
+                graphics.drawLine(x+3, y+10, x+10, y+3);
+                graphics.setColor(previousColor);
+            }
         }
 
     }
