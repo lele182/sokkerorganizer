@@ -165,12 +165,26 @@ public class JuniorProfile implements java.io.Serializable, Comparable<JuniorPro
         return ret;
     }
     public double getTalent(double finalSkill) {
-        double skillupCount = finalSkill - getInitialSkill();
+        return getTalent(finalSkill, getInitialSkill());
+    }
+    public double getTalent(double finalSkill, double initialSkill) {
+        double skillupCount = finalSkill - initialSkill;
         if (skillupCount == 1) {
             return -Math.max(getInitialWeeks()-weekFirstSkillup,
                              weekLastSkillup-getLatestData().getWeeks());
         }
-        return getAverageWeeksToSkillup(finalSkill);
+        double ret = getAverageWeeksToSkillup(finalSkill, initialSkill);
+        return ret;
+    }
+    private double getAverageWeeksToSkillup(double finalSkill, double initialSkill) {
+        double skillupCount = finalSkill - initialSkill;
+        if (skillupCount <= 1) return 0;
+        double ret = (weekFirstSkillup - weekLastSkillup) / (skillupCount - 1);
+        if (ret < JR_BEST_TALENT) {
+            _recalcSkillupWeeks();
+            ret = (weekFirstSkillup - weekLastSkillup) / (skillupCount - 1);
+        }
+        return ret;
     }
     public Date getCurrentDate() { 
         return getLatestData().getDate();
