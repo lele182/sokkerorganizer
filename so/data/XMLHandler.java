@@ -37,6 +37,8 @@ import javax.swing.JTextArea;
 import javax.swing.JLabel;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Date;
 import java.util.Calendar;
@@ -91,6 +93,31 @@ public class XMLHandler {
     }
 
     public Date getParseDate() { return parseDate; }
+
+    public int parseXmlDirectory(File directory) {
+        if (directory == null || !directory.isDirectory()) return PARSE_FAILED;
+        File[] files = directory.listFiles();
+        if (files == null) {
+            System.err.println("Could not read XML directory: " + directory.getAbsolutePath());
+            return PARSE_FAILED;
+        }
+        Arrays.sort(files, new Comparator<File>() {
+            public int compare(File first, File second) {
+                return first.getName().compareTo(second.getName());
+            }
+        });
+        int result = PARSE_FAILED;
+        for (File file : files) {
+            if (file.isFile() && isOrganizerXmlFile(file.getName())) {
+                result |= parseXmlFile(file);
+            }
+        }
+        return result;
+    }
+
+    private static boolean isOrganizerXmlFile(String filename) {
+        return filename.matches("\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}(?:_(?:team|players|juniors|trainers)(?:_.*)?|)\\.xml");
+    }
 
     public int fetchXMLData(boolean basic, boolean leagueAndMatches) {
         /* check XML save dir */

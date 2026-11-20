@@ -124,6 +124,9 @@ public final class MainFrame extends JFrame implements WindowListener, ActionLis
         xmlHandler = new XMLHandler(options, this, labelManager, team, roster, school, stadium, office,
                                     leaguesData, matchRepo);
         htmlHandler = new HTMLHandler(options, this, labelManager, roster, school);
+        loadingFrame.displayLoadingMessage("Importing saved XML data");
+        xmlHandler.parseXmlDirectory(new File(so.So.getBaseDirName() + so.So.getDataDirName()
+                + File.separator + DIRNAME_XML));
 
         //setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
