@@ -819,7 +819,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             super.fireTableDataChanged();
         }
 
-        private static class PlayerStatusData extends DataPair {
+        private class PlayerStatusData extends DataPair {
             private final boolean fromYouthTeam;
 
             private PlayerStatusData(DataPair status, boolean youthPlayer) {
@@ -833,6 +833,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             private final JLabel injuryLabel = new JLabel();
             private final JLabel youthLabel = new JLabel();
             private final JLabel talentSpace = new JLabel(" ");
+            private final YouthLeafIcon youthLeafIcon = new YouthLeafIcon();
 
             private PlayerStatusCellRenderer() {
                 super(new FlowLayout(FlowLayout.LEFT, 2, 0));
@@ -856,7 +857,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 cardsLabel.setIcon(null);
                 injuryLabel.setIcon(null);
                 injuryLabel.setText("");
-                youthLabel.setIcon(status.fromYouthTeam ? YouthLeafIcon.INSTANCE : null);
+                youthLabel.setIcon(status.fromYouthTeam ? youthLeafIcon : null);
 
                 switch (status.getValue()) {
                 case 1:
@@ -882,9 +883,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             }
         }
 
-        private static class YouthLeafIcon implements javax.swing.Icon {
-            private static final YouthLeafIcon INSTANCE = new YouthLeafIcon();
-
+        private class YouthLeafIcon implements javax.swing.Icon {
             public int getIconWidth() { return 14; }
             public int getIconHeight() { return 14; }
 
