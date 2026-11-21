@@ -130,6 +130,8 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         squadTable.setDefaultRenderer(ImageIcon.class, new CountryFlagCellRenderer() );
         squadTable.setDefaultRenderer(PlayerTableModel.PlayerStatusData.class,
                 tableModel.new PlayerStatusCellRenderer());
+        squadTable.setDefaultRenderer(PlayerTableModel.YouthTalentData.class,
+                tableModel.new YouthTalentCellRenderer());
         JScrollPane scrollPane = new JScrollPane(squadTable);
 
         rowHeader = new JTable();
@@ -198,6 +200,14 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         while (cm.getColumnCount() > 0) cm.removeColumn(cm.getColumn(0));
         // Create new columns from the options info
         ArrayList<TableColumnData> ptc = options.getPlayerTableColumns();
+        boolean hasYouthColumn = false;
+        for (TableColumnData data : ptc) {
+            if (data.getModelIndex()==37) {
+                hasYouthColumn = true;
+                break;
+            }
+        }
+        if (!hasYouthColumn) ptc.add(new TableColumnData(37, 145));
         TableColumn tc = null;
         JComboBox posEditorCombo = new JComboBox();
         posEditorCombo.addItem(new DataPair(DATA_POSITION, NO_POSITION));
@@ -273,6 +283,16 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 t.moveColumn(i, 0);
                 break;
             }
+        }
+        int ageViewIndex = -1;
+        int youthViewIndex = -1;
+        for (int i=0; i<cm.getColumnCount(); i++) {
+            int modelIndex = cm.getColumn(i).getModelIndex();
+            if (modelIndex==2) ageViewIndex = i;
+            if (modelIndex==37) youthViewIndex = i;
+        }
+        if (ageViewIndex>=0 && youthViewIndex>=0 && youthViewIndex!=ageViewIndex) {
+            t.moveColumn(youthViewIndex, ageViewIndex);
         }
     }
 
@@ -569,7 +589,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             try {
                 indexInView = cm.getColumnIndex(data);
             } catch (IllegalArgumentException iae) {
-                //no está
+                //no estï¿½
                 data.setActive(false);
                 tempArray[notUsedIndex] = data;
                 notUsedIndex--;
@@ -639,7 +659,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             if (row==-1) return;
             PlayerProfile p = roster.getPlayersList().get( tableSorter.modelIndex(row) );
             if (e.getSource()==squadTable && column>=0
-                    && squadTable.convertColumnIndexToModel(column)==19
+                    && squadTable.convertColumnIndexToModel(column)==37
                     && p.getOwnerTeamId()==p.getSourceTeamId()) {
                 editYouthTalent(p);
                 return;
@@ -967,9 +987,12 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                     for (int c=0; c<cols; c++) {
                         cache[r][c] = player.getData(c);
                         if (c==19) {
+                            cache[r][c] = new PlayerStatusData((DataPair)cache[r][c]);
+                        }
+                        else if (c==37) {
                             boolean fromYouthTeam = player.getOwnerTeamId() == player.getSourceTeamId();
-                            cache[r][c] = new PlayerStatusData((DataPair)cache[r][c], fromYouthTeam,
-                                    fromYouthTeam ? getYouthTalent(player) : null);
+                            cache[r][c] = new YouthTalentData(fromYouthTeam ? getYouthTalent(player) : null,
+                                    fromYouthTeam);
                         }
                     }
                 }
@@ -1089,6 +1112,7 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
             case 34: return labelManager.getLabel(TXT_CH_SQUAD);
             case 35: return labelManager.getLabel(TXT_CH_SEND_TO_NTDB);
             case 36: return labelManager.getLabel(TXT_CH_HEIGHT);
+            case 37: return labelManager.getLabel(TXT_CH_YOUTH);
             default:
                 return " ";
             }
@@ -1113,21 +1137,25 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
         }
 
         private class PlayerStatusData extends DataPair {
+            private PlayerStatusData(DataPair status) {
+                super(DATA_STATUS, status.getValue(), status.getDecimalValue());
+            }
+        }
+
+        private class YouthTalentData extends DataPair {
             private final boolean fromYouthTeam;
             private final String youthTalent;
 
-            private PlayerStatusData(DataPair status, boolean youthPlayer, String talent) {
-                super(DATA_STATUS, status.getValue(), status.getDecimalValue());
-                fromYouthTeam = youthPlayer;
+            private YouthTalentData(String talent, boolean youthPlayer) {
+                super(DATA_STATUS, 0, 0);
                 youthTalent = talent;
+                fromYouthTeam = youthPlayer;
             }
         }
 
         private class PlayerStatusCellRenderer extends JPanel implements TableCellRenderer {
             private final JLabel cardsLabel = new JLabel();
             private final JLabel injuryLabel = new JLabel();
-            private final JLabel youthLabel = new JLabel();
-            private final JLabel talentLabel = new JLabel();
             private final YouthLeafIcon youthLeafIcon = new YouthLeafIcon();
             private final CardIcon yellowCardIcon = new CardIcon(1, new Color(255, 215, 0));
             private final CardIcon twoYellowCardsIcon = new CardIcon(2, new Color(255, 215, 0));
@@ -1142,12 +1170,8 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 cardsLabel.setOpaque(false);
                 injuryLabel.setOpaque(false);
                 injuryLabel.setHorizontalTextPosition(JLabel.TRAILING);
-                youthLabel.setOpaque(false);
-                talentLabel.setOpaque(false);
                 add(cardsLabel);
                 add(injuryLabel);
-                add(youthLabel);
-                add(talentLabel);
             }
 
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
@@ -1156,9 +1180,6 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 cardsLabel.setIcon(null);
                 injuryLabel.setIcon(null);
                 injuryLabel.setText("");
-                youthLabel.setIcon(status.fromYouthTeam ? youthLeafIcon : null);
-                talentLabel.setText(status.youthTalent == null ? "" : "(" + status.youthTalent + ")");
-
                 switch (status.getValue()) {
                 case 1:
                     cardsLabel.setIcon(yellowCardIcon);
@@ -1180,6 +1201,32 @@ public class SquadPanel extends JPanel implements PropertyChangeListener, ItemLi
                 setBackground(selected ? table.getSelectionBackground() : table.getBackground());
                 setForeground(selected ? table.getSelectionForeground() : table.getForeground());
                 injuryLabel.setForeground(getForeground());
+                return this;
+            }
+        }
+
+        private class YouthTalentCellRenderer extends JPanel implements TableCellRenderer {
+            private final JLabel youthLabel = new JLabel();
+            private final JLabel talentLabel = new JLabel();
+            private final YouthLeafIcon youthLeafIcon = new YouthLeafIcon();
+
+            private YouthTalentCellRenderer() {
+                super(new FlowLayout(FlowLayout.LEFT, 2, 0));
+                setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+                setOpaque(true);
+                youthLabel.setOpaque(false);
+                talentLabel.setOpaque(false);
+                add(youthLabel);
+                add(talentLabel);
+            }
+
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean selected, boolean focused, int row, int column) {
+                YouthTalentData talent = (YouthTalentData)value;
+                youthLabel.setIcon(talent.fromYouthTeam ? youthLeafIcon : null);
+                talentLabel.setText(talent.youthTalent == null ? "" : talent.youthTalent);
+                setBackground(selected ? table.getSelectionBackground() : table.getBackground());
+                setForeground(selected ? table.getSelectionForeground() : table.getForeground());
                 talentLabel.setForeground(getForeground());
                 return this;
             }

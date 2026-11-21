@@ -72,6 +72,7 @@ ch_matches=Partite
 ch_goals=Goal
 ch_assists=Assist
 ch_state=Stato
+ch_youth=Giovanili
 ch_value=Valore
 ch_salary=Salario
 ch_id=ID

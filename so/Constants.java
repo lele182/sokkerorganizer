@@ -79,7 +79,7 @@ public final class Constants {
     public static final int DATA_STATUS                 = 3;
     public static final int DATA_RATING                 = 4;
 
-    public static final int PLAYERCOLUMNS_COUNT = 37;
+    public static final int PLAYERCOLUMNS_COUNT = 38;
     public static final int JUNIORCOLUMNS_COUNT = 12;
     public static final int TRAINERCOLUMNS_COUNT = 14;
     public static final int MATCHESCOLUMNS_COUNT = 9;
@@ -251,6 +251,7 @@ public final class Constants {
         public static final String TXT_CH_GOALS         = "ch_goals";
         public static final String TXT_CH_ASSISTS       = "ch_assists";
         public static final String TXT_CH_STATE         = "ch_state";
+        public static final String TXT_CH_YOUTH          = "ch_youth";
         public static final String TXT_CH_VALUE         = "ch_value";
         public static final String TXT_CH_SALARY        = "ch_salary";
         public static final String TXT_CH_ID            = "ch_id";

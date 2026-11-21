@@ -76,6 +76,7 @@ ch_matches=Matches
 ch_goals=Goals
 ch_assists=Assists
 ch_state=State
+ch_youth=Youth
 ch_value=Value
 ch_salary=Salary
 ch_id=ID
